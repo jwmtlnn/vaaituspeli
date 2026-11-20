@@ -1179,7 +1179,7 @@
                     <!-- Station X-Position Slider (Mode 2 & 3) -->
                     <div id="station-position-control" class="inset-box station-pos-box hidden">
                         <div class="station-pos-head">
-                            <span class="fw-semi text-amber">Kojeaseman sijoitus lattojen välillä (tähtäysmatkojen tasaus)</span>
+                            <span class="fw-semi text-amber">Kojeaseman sijoitus lattojen välillä (siirto vaatii uudelleentasauksen)</span>
                             <span id="station-pos-readout" class="station-pos-readout">Taakse: 20.0 m | Eteen: 20.0 m</span>
                         </div>
                         <div class="slider-row">
@@ -1233,7 +1233,7 @@
                         </div>
 
                         <p class="panel-note">
-                            Vinkki (Laurila Kuva 174): Käännä ruuveja A ja B vastakkaisiin suuntiin (X-suunta) ja viimeistele ruuvilla C (Y-suunta).
+                            Vinkki (Laurila Kuva 174): Käännä ruuveja A ja B vastakkaisiin suuntiin (X-suunta) ja viimeistele ruuvilla C (Y-suunta). Koje on tasattava jokaisen tehtävän alussa sekä aina kojeasemaa siirrettäessä.
                         </p>
                     </div>
 
@@ -1839,7 +1839,8 @@
                     spanLength: 40.0,
                     sliderPct: 50.0,
                     s_back: 20.0,
-                    s_fore: 20.0
+                    s_fore: 20.0,
+                    tiltSeed: Math.random() * Math.PI * 2
                 });
             }
 
@@ -1879,7 +1880,8 @@
                     s_back: null,
                     s_fore: null,
                     corr: null,
-                    adjH: null
+                    adjH: null,
+                    tiltSeed: Math.random() * Math.PI * 2
                 });
             }
 
@@ -1919,28 +1921,32 @@
                 el.className = 'table-input input-lg';
             });
             document.getElementById('mode4-staff-slider').value = scenario.mode4.staffOffsetZ;
-            updateMode4StaffOffset(scenario.mode4.staffOffsetZ);
+            const initialFootZ = roundMm(scenario.mode4.H2 + scenario.mode4.staffOffsetZ);
+            document.getElementById('mode4-staff-z-label').textContent = `Latan kanta: ${initialFootZ.toFixed(3)} m`;
 
             // Reset station, stop sway cleanly, and scramble instrument
             stopSwayAndReset();
             currentStationIdx = 0;
             aimDirection = 'back';
+            document.getElementById('btn-aim-back').classList.add('active');
+            document.getElementById('btn-aim-fore').classList.remove('active');
             scrambleInstrumentSetup();
+
+            if (currentMode === 2 || currentMode === 3) {
+                syncStationPosSliderUI();
+            }
             updateStationButtons();
             refreshAllViews();
         }
 
-        function scrambleInstrumentSetup() {
-            const angle = Math.random() * Math.PI * 2;
-            const mag = 2.6 + Math.random() * 2.4;
+        function scrambleLevelling(seedAngle = null, seedMag = null) {
+            const angle = seedAngle !== null ? seedAngle : Math.random() * Math.PI * 2;
+            const mag = seedMag !== null ? seedMag : (2.6 + Math.random() * 2.4);
             instState.baseTiltX = Math.round(Math.cos(angle) * mag * 10) / 10;
             instState.baseTiltY = Math.round(Math.sin(angle) * mag * 10) / 10;
             instState.screwA = 0.0;
             instState.screwB = 0.0;
             instState.screwC = 0.0;
-            instState.diopter = 55;
-            instState.focusDist = 11.0;
-            instState.eyeOffset = 0;
 
             document.getElementById('screw-a').value = 0;
             document.getElementById('screw-b').value = 0;
@@ -1948,6 +1954,14 @@
             document.getElementById('lbl-screw-a').textContent = '0.0';
             document.getElementById('lbl-screw-b').textContent = '0.0';
             document.getElementById('lbl-screw-c').textContent = '0.0';
+        }
+
+        function scrambleInstrumentSetup() {
+            scrambleLevelling();
+            instState.diopter = 55;
+            instState.focusDist = 11.0;
+            instState.eyeOffset = 0;
+
             document.getElementById('slider-diopter').value = instState.diopter;
             document.getElementById('slider-focus').value = instState.focusDist;
             document.getElementById('slider-eye').value = 0;
@@ -1964,9 +1978,12 @@
         // MODE & STATION SWITCHING
         // ============================================================================
         function switchMode(mode) {
+            if (mode === currentMode) return;
             currentMode = mode;
             currentStationIdx = 0;
             aimDirection = 'back';
+            stopSwayAndReset();
+            scrambleLevelling();
             closeDiagnostics();
 
             // Update Tabs & Sheets
@@ -2044,8 +2061,11 @@
         }
 
         function selectStation(idx) {
+            if (idx === currentStationIdx) return;
             currentStationIdx = idx;
             aimDirection = 'back';
+            stopSwayAndReset();
+            scrambleLevelling();
             document.getElementById('btn-aim-back').classList.add('active');
             document.getElementById('btn-aim-fore').classList.remove('active');
             if (currentMode === 2 || currentMode === 3) {
@@ -2219,7 +2239,27 @@
             const st = currentMode === 2
                 ? scenario.mode2.stations[currentStationIdx]
                 : scenario.mode3.stations[currentStationIdx];
-            st.sliderPct = Math.max(15, Math.min(85, parseFloat(pct)));
+            const clamped = Math.max(15, Math.min(85, parseFloat(pct)));
+            if (Math.abs(clamped - st.sliderPct) < 0.001) return;
+            st.sliderPct = clamped;
+
+            // Moving the tripod along the line always requires re-levelling
+            const angle = st.tiltSeed + st.sliderPct * 0.25;
+            const mag = 3.0 + 1.4 * Math.abs(Math.sin(st.tiltSeed * 1.7 + st.sliderPct * 0.13));
+            scrambleLevelling(angle, mag);
+
+            // In Mode 3, moving the tripod invalidates any measurements taken at the old spot
+            if (currentMode === 3 && (st.t_meas !== null || st.e_meas !== null)) {
+                st.t_meas = null;
+                st.e_meas = null;
+                st.s_back = null;
+                st.s_fore = null;
+                st.corr = null;
+                st.adjH = null;
+                scenario.mode3.isAdjusted = false;
+                buildMode3Table();
+            }
+
             syncStationPosSliderUI();
             refreshAllViews();
         }
@@ -2282,16 +2322,26 @@
                     targetDist = scenario.mode4.distBack;
                     targetLabel = "Taakse (t): Kiintopiste KP1";
                 } else {
-                    const staffFootZ = scenario.mode4.H2 + scenario.mode4.staffOffsetZ;
-                    baseReading = scenario.mode4.sightH - staffFootZ;
+                    const currentFootZ = scenario.mode4.H2 + scenario.mode4.staffOffsetZ;
+                    baseReading = scenario.mode4.sightH - currentFootZ;
                     targetDist = scenario.mode4.distFore;
-                    targetLabel = "Eteen (e): Rakennuksen muotti";
+                    targetLabel = "Eteen (e): Muottilatta";
                 }
             }
 
-            // 1. Unlevelled instrument error
+            // 1. Unlevelled instrument error (compensator out of working range when radial > 1.5)
             const bubble = getBubbleOffset();
             let tiltError = 0;
+            if (bubble.radial > 1.5) {
+                const excess = bubble.radial - 1.5;
+                const dirSign = aimDirection === 'back' ? -1 : 1;
+                const dominantTilt = Math.abs(bubble.x) > 0.6
+                    ? bubble.x
+                    : (bubble.y >= 0 ? bubble.radial * 0.65 : -bubble.radial * 0.65);
+                const sign = dominantTilt >= 0 ? 1 : -1;
+                tiltError = dirSign * sign * excess * 0.0012 * targetDist;
+            }
+
             // 2. Parallax shift: smoothly approaches 0 inside the "Parallaksiton (OK)" zone
             const focusDiff = instState.focusDist - targetDist;
             const absFocusDiff = Math.abs(focusDiff);
