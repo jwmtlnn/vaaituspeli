@@ -1,0 +1,3603 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaaituspeli v0.3 – Mittaus- ja kartoitustekniikka</title>
+    <style>
+        /* ==========================================================================
+           BASE THEME & DESIGN TOKENS (ZERO EXTERNAL LIBRARY DEPENDENCIES)
+           ========================================================================== */
+        :root {
+            --bg-body: #0f172a;
+            --bg-card: #111c30;
+            --bg-inset: #09101f;
+            --bg-btn: #1e293b;
+            --bg-btn-hover: #334155;
+            --border-subtle: #1e293b;
+            --border-strong: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --amber: #f59e0b;
+            --amber-light: #fbbf24;
+            --amber-soft: rgba(245, 158, 11, 0.16);
+            --sky: #38bdf8;
+            --sky-btn: #0284c7;
+            --sky-btn-hover: #0ea5e9;
+            --emerald: #10b981;
+            --emerald-light: #34d399;
+            --emerald-btn: #059669;
+            --emerald-btn-hover: #10b981;
+            --rose: #ef4444;
+            --rose-light: #fda4af;
+            --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* ==========================================================================
+           HEADER & NAVIGATION
+           ========================================================================== */
+        .app-header {
+            background: #0b1324;
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        }
+
+        .header-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--amber);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        }
+
+        .brand-title {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #ffffff;
+        }
+
+        .version-pill {
+            font-size: 0.72rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            background: var(--amber-soft);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            padding: 0.1rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .brand-subtitle {
+            margin: 0.1rem 0 0;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem;
+            background: var(--bg-inset);
+            padding: 0.35rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .nav-tab {
+            border: none;
+            background: transparent;
+            color: #cbd5e1;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 0.45rem 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        .nav-tab:hover {
+            background: #1e293b;
+            color: #ffffff;
+        }
+
+        .nav-tab.active {
+            background: var(--amber);
+            color: #090d16;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ==========================================================================
+           BUTTONS & BADGES
+           ========================================================================== */
+        .btn {
+            border: 1px solid var(--border-strong);
+            background: var(--bg-btn);
+            color: #e2e8f0;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 0.45rem 0.75rem;
+            border-radius: 9px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+        }
+
+        .btn:hover { background: var(--bg-btn-hover); color: #ffffff; }
+        .btn:active { transform: translateY(1px); }
+
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.65rem;
+        }
+
+        .btn-xs {
+            font-size: 0.72rem;
+            padding: 0.3rem 0.55rem;
+        }
+
+        .btn-sky {
+            background: var(--sky-btn);
+            border-color: var(--sky-btn);
+            color: #ffffff;
+        }
+        .btn-sky:hover { background: var(--sky-btn-hover); border-color: var(--sky-btn-hover); }
+
+        .btn-emerald {
+            background: var(--emerald-btn);
+            border-color: var(--emerald-btn);
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .btn-emerald:hover { background: var(--emerald-btn-hover); border-color: var(--emerald-btn-hover); }
+
+        .btn-amber {
+            background: var(--amber);
+            border-color: var(--amber);
+            color: #090d16;
+            font-weight: 700;
+        }
+        .btn-amber:hover { background: var(--amber-light); border-color: var(--amber-light); color: #090d16; }
+
+        .btn-amber-outline {
+            background: var(--amber-soft);
+            border-color: rgba(245, 158, 11, 0.5);
+            color: #fcd34d;
+        }
+
+        .btn-amber-text {
+            color: #fcd34d;
+        }
+
+        .icon {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.18rem 0.55rem;
+            border-radius: 6px;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .badge-amber {
+            background: var(--amber-soft);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+        .badge-emerald {
+            background: rgba(16, 185, 129, 0.16);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        .badge-rose {
+            background: rgba(239, 68, 68, 0.16);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+
+        /* ==========================================================================
+           MAIN LAYOUT CONTAINERS
+           ========================================================================== */
+        .main-container {
+            flex: 1;
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .inset-box {
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 0.85rem;
+        }
+
+        /* Briefing Banner */
+        .task-banner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .task-banner-text {
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .task-banner-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .task-banner-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .task-banner-desc {
+            margin: 0;
+            font-size: 0.84rem;
+            color: #cbd5e1;
+            max-width: 860px;
+        }
+
+        .station-selector-box {
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 0.5rem 0.65rem;
+            flex-shrink: 0;
+        }
+
+        .station-selector-title {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 0.35rem;
+        }
+
+        .station-buttons-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        /* Top Workspace Grid */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 7fr 5fr;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .col-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Aiming toggle group */
+        .toggle-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: var(--bg-inset);
+            padding: 0.25rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .toggle-btn {
+            border: none;
+            background: transparent;
+            color: #cbd5e1;
+            font-family: inherit;
+            font-size: 0.76rem;
+            font-weight: 600;
+            padding: 0.35rem 0.7rem;
+            border-radius: 7px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.15s ease;
+        }
+
+        .toggle-btn:hover { color: #ffffff; }
+        .toggle-btn.active {
+            background: var(--amber);
+            color: #090d16;
+        }
+
+        /* Profile Canvas */
+        .profile-canvas-wrap {
+            position: relative;
+            width: 100%;
+            height: 248px;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .profile-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .profile-legend {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            border-radius: 8px;
+            padding: 0.35rem 0.6rem;
+            font-size: 0.68rem;
+            color: #cbd5e1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            pointer-events: none;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .line-swatch {
+            width: 12px;
+            height: 2.5px;
+            display: inline-block;
+        }
+
+        /* Station Position Slider */
+        .station-pos-box {
+            margin-top: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .station-pos-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.76rem;
+        }
+
+        .station-pos-readout {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: #cbd5e1;
+            background: #111c30;
+            padding: 0.2rem 0.55rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            width: 100%;
+        }
+
+        /* Instrument Controls Grid */
+        .inst-controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 0.6rem;
+        }
+
+        .control-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.4rem;
+        }
+
+        .control-panel-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .bubble-layout {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            margin: 0.25rem 0;
+        }
+
+        .bubble-canvas-wrap {
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
+            margin: 0 auto;
+        }
+
+        .bubble-canvas-wrap canvas {
+            width: 120px;
+            height: 120px;
+            display: block;
+        }
+
+        .sliders-stack {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slider-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.72rem;
+            color: #cbd5e1;
+        }
+
+        .panel-note {
+            margin: 0;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        /* Range Sliders */
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--amber);
+            cursor: pointer;
+            margin: 0;
+        }
+
+        input[type="range"].station-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 12px;
+            background: #1e293b;
+            border-radius: 9999px;
+            border: 1px solid #334155;
+            flex: 1;
+        }
+        input[type="range"].station-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--amber);
+            border: 2px solid #0f172a;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+            cursor: grab;
+        }
+        input[type="range"].station-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--amber);
+            border: 2px solid #0f172a;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+            cursor: grab;
+        }
+
+        /* Ocular Panel */
+        .ocular-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 0.75rem;
+        }
+
+        .ocular-stage {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 0.9rem;
+        }
+
+        .ocular-stage canvas {
+            width: 310px;
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            display: block;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .ocular-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .ocular-toolbar .btn {
+            flex: 1 1 130px;
+        }
+
+        .ocular-pill {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #fcd34d;
+            pointer-events: none;
+        }
+
+        .hint-box {
+            background: rgba(120, 53, 15, 0.26);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 10px;
+            padding: 0.7rem;
+            font-size: 0.74rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .hint-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.4rem;
+        }
+
+        /* Digital LCD */
+        .lcd-screen {
+            background: linear-gradient(145deg, #9ca986, #8b9974);
+            color: #1a2416;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+            font-family: var(--font-mono);
+            border-radius: 9px;
+            padding: 0.75rem;
+            border: 2px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .lcd-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .lcd-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            padding: 0.35rem 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .lcd-label {
+            font-size: 0.64rem;
+            text-transform: uppercase;
+            opacity: 0.75;
+        }
+
+        .lcd-val {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        /* ==========================================================================
+           FIELD SHEETS & TABLES
+           ========================================================================== */
+        .sheet-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 1rem;
+        }
+
+        .sheet-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .sheet-subtitle {
+            margin: 0.2rem 0 0;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .sheet-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.75rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        .metric-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            margin: 0.2rem 0;
+        }
+
+        .metric-note {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            width: 100%;
+            margin-bottom: 0.85rem;
+        }
+
+        table.field-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+            text-align: left;
+        }
+
+        table.field-table thead tr {
+            background: var(--bg-inset);
+            color: #cbd5e1;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        table.field-table th,
+        table.field-table td {
+            padding: 0.55rem 0.6rem;
+            border-bottom: 1px solid rgba(30, 41, 59, 0.75);
+        }
+
+        .text-right { text-align: right; }
+        .text-amber { color: #fcd34d; }
+        .text-sky { color: var(--sky); }
+        .text-emerald { color: var(--emerald-light); }
+        .text-rose { color: #f87171; }
+        .text-muted { color: var(--text-muted); }
+        .text-dim { color: var(--text-dim); }
+        .fw-bold { font-weight: 700; }
+        .fw-semi { font-weight: 600; }
+
+        .row-point { background: rgba(17, 28, 48, 0.85); }
+        .row-station { background: rgba(9, 16, 31, 0.65); cursor: pointer; }
+        .row-station:hover { background: rgba(30, 41, 59, 0.45); }
+        .row-sum { background: var(--bg-inset); border-top: 2px solid var(--border-strong); font-weight: 600; }
+
+        .table-input {
+            background: var(--bg-body);
+            border: 1px solid var(--border-strong);
+            color: var(--text-main);
+            padding: 0.35rem 0.5rem;
+            border-radius: 7px;
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            text-align: right;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .table-input:focus {
+            outline: none;
+            border-color: var(--amber);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+        }
+
+        .table-input.correct {
+            border-color: var(--emerald);
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .table-input.incorrect {
+            border-color: var(--rose);
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+        .input-lg {
+            font-size: 0.95rem;
+            padding: 0.45rem 0.6rem;
+        }
+
+        /* Diagnostics Panel */
+        .diag-panel {
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid var(--border-strong);
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .diag-success { background: rgba(6, 78, 59, 0.45); border-color: rgba(16, 185, 129, 0.45); }
+        .diag-error   { background: rgba(136, 19, 55, 0.45); border-color: rgba(239, 68, 68, 0.45); }
+        .diag-warning { background: rgba(120, 53, 15, 0.45); border-color: rgba(245, 158, 11, 0.45); }
+
+        .diag-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .diag-icon-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .diag-title {
+            margin: 0 0 0.35rem;
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .diag-body {
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+        }
+
+        .diag-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            font-size: 1rem;
+        }
+        .diag-close:hover { color: #ffffff; }
+
+        /* ==========================================================================
+           MODALS
+           ========================================================================== */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(9, 16, 31, 0.82);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 720px;
+            max-height: 86vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+        }
+
+        .modal-box.modal-sm {
+            max-width: 440px;
+        }
+
+        .modal-head {
+            background: var(--bg-inset);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0.9rem 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-body {
+            padding: 1.2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            font-size: 0.84rem;
+            color: #cbd5e1;
+        }
+
+        .formula-banner {
+            font-family: var(--font-mono);
+            background: #111c30;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            text-align: center;
+            font-size: 0.86rem;
+        }
+
+        .about-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.45rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .about-row:last-child { border-bottom: none; }
+
+        .about-link {
+            color: var(--sky);
+            text-decoration: none;
+            font-family: var(--font-mono);
+        }
+        .about-link:hover { text-decoration: underline; }
+
+        /* ==========================================================================
+           RESPONSIVE BREAKPOINTS
+           ========================================================================== */
+        @media (max-width: 1024px) {
+            .workspace-grid { grid-template-columns: 1fr; }
+            .grid-5 { grid-template-columns: repeat(2, 1fr); }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 680px) {
+            .inst-controls-grid { grid-template-columns: 1fr; }
+            .grid-5, .grid-4 { grid-template-columns: 1fr; }
+            .bubble-layout { flex-direction: column; align-items: stretch; }
+            .ocular-stage canvas { width: 248px; height: 248px; }
+            .hide-sm { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand">
+                <!-- Custom Surveying / Levelling SVG Logo -->
+                <div class="logo-box" title="Vaaituspeli">
+                    <svg viewBox="0 0 40 40" width="34" height="34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 17L6 35M13 17L20 35M13 17L13 36" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/>
+                        <rect x="6" y="10" width="14" height="7" rx="2" fill="#0f172a"/>
+                        <rect x="20" y="11.5" width="3" height="4" rx="0.8" fill="#0f172a"/>
+                        <line x1="23.5" y1="13.5" x2="31" y2="13.5" stroke="#dc2626" stroke-width="2" stroke-dasharray="2.5 2"/>
+                        <rect x="31" y="5" width="5.5" height="30" rx="1" fill="#ffffff" stroke="#0f172a" stroke-width="1.6"/>
+                        <path d="M32 8H35.5M32 11H34.5M32 14H35.5M32 17H34.5M32 20H35.5M32 23H34.5M32 26H35.5M32 29H34.5M32 32H35.5" stroke="#0f172a" stroke-width="1.4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="brand-title">
+                        Vaaituspeli
+                        <span class="version-pill">v0.3</span>
+                    </h1>
+                </div>
+            </div>
+
+            <!-- 4 Exercise Selector Tabs -->
+            <nav class="nav-tabs" aria-label="Harjoitukset">
+                <button onclick="switchMode(1)" id="tab-1" class="nav-tab active">
+                    <span>1. Korkeudenmääritys</span>
+                </button>
+                <button onclick="switchMode(2)" id="tab-2" class="nav-tab">
+                    <span>2. Perinteinen jonovaaitus</span>
+                </button>
+                <button onclick="switchMode(3)" id="tab-3" class="nav-tab">
+                    <span>3. Digitaalinen tarkkavaaitus</span>
+                </button>
+                <button onclick="switchMode(4)" id="tab-4" class="nav-tab">
+                    <span>4. Korkeudenmerkintä</span>
+                </button>
+            </nav>
+
+            <!-- Action Buttons -->
+            <div class="header-actions">
+                <button onclick="generateNewScenario()" class="btn" title="Arvo uudet maastokorkeudet ja lähtöarvot">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+                    <span>Uusi tehtävä</span>
+                </button>
+                <button onclick="toggleTheoryModal()" class="btn btn-sky">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    <span>Teoria &amp; Kaavat</span>
+                </button>
+                <button onclick="toggleAboutModal()" class="btn">
+                    <svg class="icon text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <span>Tietoja</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="main-container">
+
+        <!-- TASK BRIEFING BANNER -->
+        <section id="task-banner" class="card task-banner">
+            <div class="task-banner-text">
+                <div class="task-banner-head">
+                    <span id="badge-mode" class="badge badge-amber">Harjoitus 1 • Korkeudenmääritys</span>
+                    <h2 id="title-mode" class="task-banner-title">Pisteen korkeuden määrittäminen tunnetun kiintopisteen avulla</h2>
+                </div>
+                <p id="desc-mode" class="task-banner-desc">
+                    Tasaa vaaituskoje kolmella jalkaruuvilla ja poista parallaksi. Lue taakselukema (<strong>t</strong>) tunnetulta korkeuskiintopisteeltä KP1 sekä eteenlukema (<strong>e</strong>) pisteeltä P1, ja laske pisteen P1 korkeus <i>H</i><sub>2</sub>.
+                </p>
+            </div>
+            <!-- Station Selector (Visible in Mode 2 & 3) -->
+            <div id="station-selector-container" class="station-selector-box hidden">
+                <div class="station-selector-title">Valitse kojeasema jonossa</div>
+                <div id="station-buttons" class="station-buttons-row"></div>
+            </div>
+        </section>
+
+        <!-- TOP WORKSPACE: PROFILE + INSTRUMENT CONTROLS | OCULAR VIEW -->
+        <div class="workspace-grid">
+
+            <!-- LEFT COLUMN: TERRAIN PROFILE & INSTRUMENT SETUP -->
+            <div class="col-stack">
+
+                <!-- 1. TERRAIN & PROFILE CANVAS CARD -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg class="icon text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+                            <span>Maasto- ja pystyprofiilinäkymä</span>
+                        </h3>
+                        <!-- Aiming Toggle Buttons -->
+                        <div class="toggle-group">
+                            <button onclick="setAimDirection('back')" id="btn-aim-back" class="toggle-btn active">
+                                <span>← Tähtää taakse (t)</span>
+                            </button>
+                            <button onclick="setAimDirection('fore')" id="btn-aim-fore" class="toggle-btn">
+                                <span>Tähtää eteen (e) →</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="profile-canvas-wrap">
+                        <canvas id="profileCanvas"></canvas>
+                        <div class="profile-legend">
+                            <span class="legend-item"><span class="dot" style="background:#38bdf8;"></span> Kiintopiste (KP)</span>
+                            <span class="legend-item"><span class="dot" style="background:#f59e0b;"></span> Kojeasema</span>
+                            <span class="legend-item"><span class="line-swatch" style="background:#10b981;"></span> Tasattu säde</span>
+                            <span class="legend-item"><span class="line-swatch" style="background:#ef4444;"></span> Tasaamaton säde</span>
+                        </div>
+                    </div>
+
+                    <!-- Station X-Position Slider (Mode 2 & 3) -->
+                    <div id="station-position-control" class="inset-box station-pos-box hidden">
+                        <div class="station-pos-head">
+                            <span class="fw-semi text-amber">Kojeaseman sijoitus lattojen välillä (tähtäysmatkojen tasaus)</span>
+                            <span id="station-pos-readout" class="station-pos-readout">Taakse: 20.0 m | Eteen: 20.0 m</span>
+                        </div>
+                        <div class="slider-row">
+                            <button onclick="nudgeInstrumentPosition(-1)" class="btn btn-xs mono" title="Siirrä taaksepäin">◀</button>
+                            <span class="mono text-muted hide-sm" style="font-size:0.72rem;">Taakse</span>
+                            <input type="range" id="inst-pos-slider" min="15" max="85" step="0.2" value="50" oninput="updateInstrumentPosition(this.value)" class="station-slider">
+                            <span class="mono text-muted hide-sm" style="font-size:0.72rem;">Eteen</span>
+                            <button onclick="nudgeInstrumentPosition(1)" class="btn btn-xs mono" title="Siirrä eteenpäin">▶</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. INSTRUMENT LEVELLING & OPTICS CONTROLS -->
+                <div class="card inst-controls-grid">
+
+                    <!-- Circular Bubble Level (3 Foot Screws A, B, C - NO auto-level button) -->
+                    <div class="inset-box control-panel">
+                        <div class="control-panel-head">
+                            <span class="control-panel-title">1. Rasiatasain &amp; kolme jalkaruuvia</span>
+                            <span id="level-status-badge" class="badge badge-rose">Tasaamaton</span>
+                        </div>
+
+                        <div class="bubble-layout">
+                            <div class="bubble-canvas-wrap">
+                                <canvas id="bubbleCanvas" width="128" height="128"></canvas>
+                            </div>
+
+                            <div class="sliders-stack">
+                                <div class="slider-field">
+                                    <div class="slider-label">
+                                        <span>Ruuvi A <span class="text-dim">(alavasen)</span></span>
+                                        <span id="lbl-screw-a" class="mono text-amber">0.0</span>
+                                    </div>
+                                    <input type="range" id="screw-a" min="-10" max="10" step="0.2" value="0" oninput="adjustBubble()">
+                                </div>
+                                <div class="slider-field">
+                                    <div class="slider-label">
+                                        <span>Ruuvi B <span class="text-dim">(alaoikea)</span></span>
+                                        <span id="lbl-screw-b" class="mono text-amber">0.0</span>
+                                    </div>
+                                    <input type="range" id="screw-b" min="-10" max="10" step="0.2" value="0" oninput="adjustBubble()">
+                                </div>
+                                <div class="slider-field">
+                                    <div class="slider-label">
+                                        <span>Ruuvi C <span class="text-dim">(ylhäällä)</span></span>
+                                        <span id="lbl-screw-c" class="mono text-amber">0.0</span>
+                                    </div>
+                                    <input type="range" id="screw-c" min="-10" max="10" step="0.2" value="0" oninput="adjustBubble()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="panel-note">
+                            Vinkki (Laurila Kuva 174): Käännä ruuveja A ja B vastakkaisiin suuntiin (X-suunta) ja viimeistele ruuvilla C (Y-suunta).
+                        </p>
+                    </div>
+
+                    <!-- Telescope Optics & Parallax Test (NO auto-remove-parallax button) -->
+                    <div class="inset-box control-panel">
+                        <div class="control-panel-head">
+                            <span class="control-panel-title">2. Tarkennus &amp; parallaksikoe</span>
+                            <span id="optics-status-badge" class="badge badge-amber">Parallaksia</span>
+                        </div>
+
+                        <div class="sliders-stack">
+                            <div class="slider-field">
+                                <div class="slider-label">
+                                    <span>Okulaarin silmäkappale (Ristikko):</span>
+                                    <span id="lbl-diopter" class="mono text-amber">Epäterävä</span>
+                                </div>
+                                <input type="range" id="slider-diopter" min="0" max="100" step="1" value="55" oninput="updateOptics()">
+                            </div>
+
+                            <div class="slider-field">
+                                <div class="slider-label">
+                                    <span>Fokusointiruuvi (Etäisyys):</span>
+                                    <span id="lbl-focus" class="mono text-sky">11.0 m</span>
+                                </div>
+                                <input type="range" id="slider-focus" min="5" max="60" step="0.2" value="11" oninput="updateOptics()">
+                            </div>
+
+                            <div class="slider-field" style="padding-top:0.45rem; border-top:1px solid var(--border-subtle);">
+                                <div class="slider-label">
+                                    <span>Parallaksikoe (Liikuta silmää):</span>
+                                    <span id="lbl-eye-offset" class="mono text-muted">Keskellä</span>
+                                </div>
+                                <input type="range" id="slider-eye" min="-1" max="1" step="0.05" value="0" oninput="updateOptics()">
+                                <div style="margin-top:0.25rem;">
+                                    <button onclick="resetEyeCenter()" class="btn btn-xs" style="width:100%;">
+                                        Keskitä silmä okulaarissa
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="panel-note">
+                            Liikuta silmää ylös/alas: jos viivaristikko liikkuu latan päällä, säädä fokusointiruuvia (Laurila Kuva 20).
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: OCULAR VIEW & MODE-SPECIFIC CONTROLS -->
+            <div class="col-stack">
+                <div class="card ocular-card">
+                    <div class="card-header" style="margin-bottom:0;">
+                        <h3 class="card-title" id="ocular-title">
+                            <svg class="icon text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                            <span>Näkemäkuva (Kaukoputki)</span>
+                        </h3>
+                    </div>
+
+                    <!-- TELESCOPE OCULAR CANVAS -->
+                    <div class="ocular-stage">
+                        <canvas id="ocularCanvas" width="320" height="320"></canvas>
+                        <div id="ocular-target-pill" class="ocular-pill">
+                            Taakse (t): Kiintopiste KP1
+                        </div>
+                    </div>
+
+                    <!-- OCULAR ACTION BUTTONS RIGHT BELOW TELESCOPE -->
+                    <div class="ocular-toolbar">
+                        <button onclick="toggleStaffSway()" id="btn-sway" class="btn btn-sm" title="Simuloi latan heilutusta pystysuoruuden etsimiseksi (Laurila Kuva 188)">
+                            <span>Heiluta lattaa</span>
+                        </button>
+                        <button onclick="toggleReadingHint()" id="btn-hint" class="btn btn-sm btn-amber-text" title="Näytä tai piilota lukuapu">
+                            <span>Lukuapu</span>
+                        </button>
+                    </div>
+
+                    <!-- OPTIONAL READING HINT BOX -->
+                    <div id="reading-hint-box" class="hint-box hidden">
+                        <div class="hint-head">
+                            <span class="fw-bold text-amber">Lukuapu:</span>
+                            <span id="hint-live-values" class="mono fw-bold text-amber"></span>
+                        </div>
+                        <div style="color:#fde68a; opacity:0.9;">
+                            • Musta vaakaviiva merkitsee tasadesimetriä (esim. 14 = 1.400 m). Numeron vieressä (0–5 cm) on kaksi 1 cm palkkia (1–2 cm ja 3–4 cm), ja yläosassa (5–10 cm) E-kuvio (5–6, 7–8 ja 9–10 cm).<br>
+                            • Optinen etäisyys: laske ylä- ja alaetäisyysviivan väli latasta (Δ<i>L</i>) ja kerro sadalla (<i>s</i> = 100 · Δ<i>L</i>).
+                        </div>
+                    </div>
+
+                    <!-- MODE 3 SPECIFIC PANEL: DIGITAL LEVEL LCD & AUTO-MEASURE -->
+                    <div id="mode3-controls" class="inset-box hidden" style="display:flex; flex-direction:column; gap:0.65rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                            <span class="fw-bold text-muted" style="text-transform:uppercase; letter-spacing:0.04em;">Digitaalinen tarkkavaaituskoje (DL-101C)</span>
+                            <span class="mono text-emerald" style="font-size:0.72rem;">Invar-viivakoodi</span>
+                        </div>
+
+                        <div class="lcd-screen">
+                            <div class="lcd-row">
+                                <span id="lcd-station">ASEMA 1: TAAKSE (t)</span>
+                                <span id="lcd-quality">SIGNAALI: 100%</span>
+                            </div>
+                            <div class="lcd-grid">
+                                <div>
+                                    <div class="lcd-label">Lattalukema (m)</div>
+                                    <div id="lcd-reading" class="lcd-val">-.----</div>
+                                </div>
+                                <div>
+                                    <div class="lcd-label">Etäisyys s (m)</div>
+                                    <div id="lcd-distance" class="lcd-val">--.--</div>
+                                </div>
+                            </div>
+                            <div class="lcd-row">
+                                <span id="lcd-ds">Aseman Δs: 0.00 m</span>
+                                <span id="lcd-std">Hajonta s: 0.00 mm</span>
+                            </div>
+                        </div>
+
+                        <button onclick="triggerDigitalMeasurement()" class="btn btn-amber" style="width:100%; padding:0.55rem;">
+                            <span>MITTAA &amp; TALLENNA VIIVAKOODILUKEMA (3× toisto)</span>
+                        </button>
+                    </div>
+
+                    <!-- MODE 4 SPECIFIC PANEL: MOVING THE STAFF ON FORMWORK (FORMER MODE 1) -->
+                    <div id="mode4-controls" class="inset-box hidden" style="display:flex; flex-direction:column; gap:0.55rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
+                            <span class="fw-semi text-amber">Muottilatan korkeussäätö (Eteentähtäys)</span>
+                            <span id="mode4-staff-z-label" class="mono" style="color:#cbd5e1;">Latan kanta: 141.850 m</span>
+                        </div>
+                        <p class="panel-note">
+                            Kun tähtäät eteen (muotille), siirrä lattaa pystysuunnassa, kunnes vaakaviivan lukema vastaa laskemaasi eteenlukemaa <span class="mono text-amber">e</span>.
+                        </p>
+                        <div class="slider-row">
+                            <button onclick="nudgeMode4Staff(-0.001)" class="btn btn-xs mono">-1 mm</button>
+                            <input type="range" id="mode4-staff-slider" min="-0.500" max="0.500" step="0.001" value="-0.150" oninput="updateMode4StaffOffset(this.value)">
+                            <button onclick="nudgeMode4Staff(0.001)" class="btn btn-xs mono">+1 mm</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- BOTTOM WORKSPACE: FIELD BOOKS, CALCULATIONS & DIAGNOSTICS -->
+        <section class="card">
+
+            <!-- ================= MODE 1 FIELD SHEET: KORKEUDENMÄÄRITYS (NEW) ================= -->
+            <div id="sheet-mode-1">
+                <div class="sheet-header">
+                    <div>
+                        <h3 class="sheet-title">Harjoitus 1: Pisteen korkeuden määrittäminen (yksittäinen kojeasema)</h3>
+                        <p class="sheet-subtitle">
+                            Kaavat (Laurila s. 205–206): Korkeusero Δ<i>H</i><sub>12</sub> = <i>t</i> − <i>e</i> &nbsp;|&nbsp; Määritettävän pisteen korkeus <i>H</i><sub>2</sub> = <i>H</i><sub>1</sub> + Δ<i>H</i><sub>12</sub>
+                        </p>
+                    </div>
+                    <div class="sheet-actions">
+                        <button onclick="verifyMode1()" class="btn btn-emerald">
+                            <span>Tarkista korkeudenmääritys</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid-5">
+                    <div class="inset-box">
+                        <span class="metric-label">Tunnetun kiintopisteen KP1 korkeus (<i>H</i><sub>1</sub>)</span>
+                        <div id="m1-h1" class="metric-value text-sky">84.250 m</div>
+                        <div class="metric-note">Lähtöpiste (N2000)</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <label for="m1-input-t" class="metric-label">1. Taakselukema KP1:ltä (<i>t</i>, m)</label>
+                        <input type="number" step="0.001" id="m1-input-t" placeholder="esim. 1.842" class="table-input input-lg">
+                        <div class="metric-note">Lue kaukoputkella pisteeltä KP1</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <label for="m1-input-e" class="metric-label">2. Eteenlukema P1:ltä (<i>e</i>, m)</label>
+                        <input type="number" step="0.001" id="m1-input-e" placeholder="esim. 1.215" class="table-input input-lg">
+                        <div class="metric-note">Tähtää eteen pisteelle P1</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <label for="m1-input-dh" class="metric-label">3. Korkeusero Δ<i>H</i> = <i>t</i> − <i>e</i> (m)</label>
+                        <input type="number" step="0.001" id="m1-input-dh" placeholder="esim. +0.627" class="table-input input-lg">
+                        <div class="metric-note">Huomaa etumerkki (+ nousu / − lasku)</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <label for="m1-input-h2" class="metric-label">4. Pisteen P1 korkeus <i>H</i><sub>2</sub> (m)</label>
+                        <input type="number" step="0.001" id="m1-input-h2" placeholder="esim. 84.877" class="table-input input-lg">
+                        <div class="metric-note"><i>H</i><sub>2</sub> = <i>H</i><sub>1</sub> + (<i>t</i> − <i>e</i>)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MODE 2 FIELD SHEET: PERINTEINEN JONOVAAITUS ================= -->
+            <div id="sheet-mode-2" class="hidden">
+                <div class="sheet-header">
+                    <div>
+                        <h3 class="sheet-title">Harjoitus 2: Perinteinen jonovaaituksen havaintokirja ja tasoituslaskenta</h3>
+                        <p class="sheet-subtitle">
+                            Kirjaa lattalukemat (3 desimaalia), laske korkeuserot Δ<i>H</i> = <i>t</i> − <i>e</i>, korkeussulkuvirhe <i>w</i><sub>H</sub> = <i>H</i><sub>hav</sub> − <i>H</i><sub>tunn</sub> ja tasoita jono (Laurila Taulukko 8 &amp; 9, s. 222–228).
+                        </p>
+                    </div>
+                    <div class="sheet-actions">
+                        <button onclick="autoCalculateMode2Math()" class="btn btn-sm btn-amber-text" title="Laskee korkeuserot ja tasoituksen kirjatuista t- ja e-lukemistasi">
+                            <span>Laske sarakkeet havainnoistani</span>
+                        </button>
+                        <button onclick="verifyMode2()" class="btn btn-emerald">
+                            <span>Tarkista havaintokirja</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="field-table">
+                        <thead>
+                            <tr>
+                                <th>Kojeasema / Piste</th>
+                                <th class="text-right">Taakse <i>t</i> (m)</th>
+                                <th class="text-right">Eteen <i>e</i> (m)</th>
+                                <th class="text-right">Korkeusero Δ<i>H</i> = <i>t</i> − <i>e</i> (m)</th>
+                                <th class="text-right">Havaittu korkeus (m)</th>
+                                <th class="text-right">Korjaus <i>k</i> (m)</th>
+                                <th class="text-right">Tasoitettu korkeus (m)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mode2-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="inset-box grid-4" style="font-size:0.76rem;">
+                    <div>
+                        <span class="metric-label">Vaaitusjonon kokonaispituus <i>L</i>:</span>
+                        <span id="m2-length" class="fw-bold mono" style="font-size:0.9rem; color:#ffffff;">160.0 m (4 kojeasemaa)</span>
+                    </div>
+                    <div>
+                        <label for="m2-input-wh" class="metric-label">Korkeussulkuvirhe <i>w</i><sub>H</sub> = <i>H</i><sub>hav</sub> − <i>H</i><sub>tunn</sub> (m):</label>
+                        <input type="number" step="0.001" id="m2-input-wh" placeholder="esim. -0.004" class="table-input">
+                    </div>
+                    <div>
+                        <label for="m2-input-ppm" class="metric-label">Suhteellinen tarkkuus <i>r</i> = |<i>w</i><sub>H</sub>| / <i>L</i> (ppm):</label>
+                        <input type="number" step="0.1" id="m2-input-ppm" placeholder="esim. 25.0" class="table-input">
+                    </div>
+                    <div style="display:flex; flex-direction:column; justify-content:center;">
+                        <span class="text-muted">Kaavoitusmittausohjeet (2003):</span>
+                        <span class="text-emerald fw-semi" style="margin-top:0.2rem;">Käyttöpisteet (lk 1–2): sallittu <i>r</i> &lt; 50 ppm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MODE 3 FIELD SHEET: DIGITAALINEN TARKKAVAAITUS ================= -->
+            <div id="sheet-mode-3" class="hidden">
+                <div class="sheet-header">
+                    <div>
+                        <h3 class="sheet-title">Harjoitus 3: Digitaalisen tarkkavaaituksen maastotallennin &amp; laadunvalvonta</h3>
+                        <p class="sheet-subtitle">
+                            Tarkkavaaituksessa korkeusperuspisteiden suhteellinen tarkkuusvaatimus on <i>r</i> ≤ 5 ppm (Laurila s. 225). Huolehdi tähtäysmatkojen yhtäsuuruudesta!
+                        </p>
+                    </div>
+                    <div class="sheet-actions">
+                        <button onclick="adjustDigitalLine()" class="btn btn-sky btn-sm">
+                            <span>Laske sulkuvirhe &amp; tasoita jono</span>
+                        </button>
+                        <button onclick="verifyMode3()" class="btn btn-emerald">
+                            <span>Arvioi tarkkavaaitus</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="field-table mono">
+                        <thead>
+                            <tr style="font-family:var(--font-sans);">
+                                <th>Kojeasema / Piste</th>
+                                <th class="text-right">Taakse <i>t</i> (m)</th>
+                                <th class="text-right">Eteen <i>e</i> (m)</th>
+                                <th class="text-right">Matkat <i>s</i><sub>t</sub> / <i>s</i><sub>e</sub> (m)</th>
+                                <th class="text-right">Matkaero Δ<i>s</i> (m)</th>
+                                <th class="text-right">Δ<i>H</i> = <i>t</i> − <i>e</i> (m)</th>
+                                <th class="text-right">Havaittu <i>H</i> (m)</th>
+                                <th class="text-right">Korjaus <i>k</i> (m)</th>
+                                <th class="text-right">Tasoitettu <i>H</i> (m)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mode3-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="inset-box grid-4" style="font-size:0.76rem;">
+                    <div>
+                        <span class="metric-label">Kokonaispituus <i>L</i> &amp; ΣΔ<i>s</i>:</span>
+                        <span id="m3-summary-dist" class="fw-bold mono" style="font-size:0.9rem; color:#ffffff;">0.0 m | ΣΔs: 0.0 m</span>
+                    </div>
+                    <div>
+                        <span class="metric-label">Korkeussulkuvirhe <i>w</i><sub>H</sub>:</span>
+                        <span id="m3-summary-wh" class="fw-bold mono text-amber" style="font-size:0.9rem;">Mittaa kaikki asemat</span>
+                    </div>
+                    <div>
+                        <span class="metric-label">Suhteellinen tarkkuus <i>r</i>:</span>
+                        <span id="m3-summary-ppm" class="fw-bold mono text-sky" style="font-size:0.9rem;">- ppm</span>
+                    </div>
+                    <div>
+                        <span class="metric-label">Laatuvaatimus (Peruskiintopiste):</span>
+                        <span class="text-emerald fw-semi"><i>r</i> ≤ 5.0 ppm ja |Δ<i>s</i>| ≤ 1.0 m</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MODE 4 FIELD SHEET: KORKEUDENMERKINTÄ (FORMER MODE 1) ================= -->
+            <div id="sheet-mode-4" class="hidden">
+                <div class="sheet-header">
+                    <div>
+                        <h3 class="sheet-title">Harjoitus 4: Korkeudenmerkintä (perustuskorkeuden vienti ja merkintä)</h3>
+                        <p class="sheet-subtitle">
+                            Kaavat (Laurila s. 206 &amp; teht. 152, s. 232): Tähtäystaso = <i>H</i><sub>1</sub> + <i>t</i> &nbsp;|&nbsp; Vaadittu eteenlukema <i>e</i> = (<i>H</i><sub>1</sub> + <i>t</i>) − <i>H</i><sub>suunniteltu</sub>
+                        </p>
+                    </div>
+                    <div class="sheet-actions">
+                        <button onclick="autoCalculateMode4Math()" class="btn btn-sm btn-amber-text" title="Laskee tähtäystason ja vaaditun eteenlukeman syöttämästäsi taakselukemasta">
+                            <span>Laske kaavat taakselukemastani</span>
+                        </button>
+                        <button onclick="verifyMode4()" class="btn btn-emerald">
+                            <span>Merkitse korko &amp; tarkista suoritus</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid-5">
+                    <div class="inset-box">
+                        <span class="metric-label">Lähtöpisteen KP1 korkeus (<i>H</i><sub>1</sub>)</span>
+                        <div id="m4-h1" class="metric-value text-sky">140.356 m</div>
+                        <div class="metric-note">Kivijalan pultti (N2000)</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <span class="metric-label">Suunniteltu perustuskorko (<i>H</i><sub>2</sub>)</span>
+                        <div id="m4-h2" class="metric-value text-amber">142.000 m</div>
+                        <div class="metric-note">Merkittävä muottiin</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <label for="m4-input-t" class="metric-label">1. Taakselukema KP1:ltä (<i>t</i>, m)</label>
+                        <input type="number" step="0.001" id="m4-input-t" placeholder="esim. 2.769" class="table-input input-lg">
+                        <div class="metric-note">Lue kaukoputkella pisteeltä KP1</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <label for="m4-input-hi" class="metric-label">2. Tähtäystason korkeus (<i>H</i><sub>1</sub> + <i>t</i>)</label>
+                        <input type="number" step="0.001" id="m4-input-hi" placeholder="esim. 143.125" class="table-input input-lg">
+                        <div class="metric-note">Kojeen vaaka-akselin taso</div>
+                    </div>
+
+                    <div class="inset-box">
+                        <label for="m4-input-e" class="metric-label">3. Vaadittu eteenlukema (<i>e</i>, m)</label>
+                        <input type="number" step="0.001" id="m4-input-e" placeholder="esim. 1.125" class="table-input input-lg">
+                        <div class="metric-note">Aseta muottilatta tähän lukemaan!</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PEDAGOGICAL DIAGNOSTICS & FEEDBACK BOX -->
+            <div id="diagnostics-panel" class="diag-panel hidden">
+                <div class="diag-content">
+                    <div id="diag-icon" class="diag-icon-box"></div>
+                    <div>
+                        <h4 id="diag-title" class="diag-title">Diagnostiikkapalaute</h4>
+                        <div id="diag-body" class="diag-body"></div>
+                    </div>
+                </div>
+                <button onclick="closeDiagnostics()" class="diag-close" aria-label="Sulje palaute">✕</button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- THEORY & FORMULAS MODAL (LAURILA 2012 REFERENCE) -->
+    <div id="theory-modal" class="modal-backdrop hidden">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h2 class="modal-title">Vaaituksen teoria ja laskentakaavat (Laurila 2012, Luku 6)</h2>
+                <button onclick="toggleTheoryModal()" class="btn btn-xs" aria-label="Sulje">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="inset-box">
+                    <div class="fw-bold text-amber" style="margin-bottom:0.35rem;">1. Vaaituksen perusperiaate ja korkeudenmääritys (s. 205–206)</div>
+                    <p style="margin:0 0 0.5rem;">
+                        Vaaituskojeella muodostetaan vaakasuora tähtäystaso. Kahden pisteen välinen korkeusero Δ<i>H</i><sub>12</sub> saadaan pisteille viedyistä latoista luettujen <strong>taakselukeman (<i>t</i>)</strong> ja <strong>eteenlukeman (<i>e</i>)</strong> erotuksena:
+                    </p>
+                    <div class="formula-banner text-amber">
+                        Δ<i>H</i><sub>12</sub> = <i>t</i> − <i>e</i> &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; <i>H</i><sub>2</sub> = <i>H</i><sub>1</sub> + Δ<i>H</i><sub>12</sub> = <i>H</i><sub>1</sub> + (<i>t</i> − <i>e</i>)
+                    </div>
+                </div>
+
+                <div class="inset-box">
+                    <div class="fw-bold text-emerald" style="margin-bottom:0.35rem;">2. Jonovaaitus, sulkuvirhe ja tasoittaminen (s. 219–228)</div>
+                    <p style="margin:0 0 0.5rem;">
+                        Jonovaaituksessa kokonaiskorkeusero on ΣΔ<i>H</i> = Σ<i>t</i> − Σ<i>e</i>. Kun jono päätetään tunnetulle sulkupisteelle, saadaan <strong>korkeussulkuvirhe <i>w</i><sub>H</sub></strong> ja <strong>suhteellinen tarkkuus <i>r</i></strong>:
+                    </p>
+                    <div class="formula-banner text-emerald">
+                        <i>w</i><sub>H</sub> = <i>H</i><sub>havaittu</sub> − <i>H</i><sub>tunnettu</sub> &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; <i>r</i> = |<i>w</i><sub>H</sub>| / <i>L</i> &nbsp;(ppm = mm / km)
+                    </div>
+                    <p style="margin:0.5rem 0 0;">
+                        Jos sulkuvirhe alittaa sallitun rajan, se jaetaan vastakkaismerkkisenä korjauksena (<i>K</i><sub>kok</sub> = −<i>w</i><sub>H</sub>) kojeasemien lukumäärän suhteessa: <i>k</i><sub>i</sub> = −<i>w</i><sub>H</sub> · (<i>i</i> / <i>n</i>).
+                    </p>
+                </div>
+
+                <div class="inset-box">
+                    <div class="fw-bold text-sky" style="margin-bottom:0.35rem;">3. Korkeudenmerkintä (Tehtävä 152, s. 232)</div>
+                    <p style="margin:0 0 0.5rem;">
+                        Kun tunnetulta kiintopisteeltä (<i>H</i><sub>1</sub>) halutaan merkitä rakennuspaikalle suunniteltu korkeus <i>H</i><sub>tavoite</sub>, lasketaan ensin kojeen tähtäystason korkeus (<i>H</i><sub>tähtäys</sub> = <i>H</i><sub>1</sub> + <i>t</i>) ja sen jälkeen vaadittu eteenlukema <i>e</i>:
+                    </p>
+                    <div class="formula-banner text-sky">
+                        <i>e</i> = (<i>H</i><sub>1</sub> + <i>t</i>) − <i>H</i><sub>tavoite</sub>
+                    </div>
+                </div>
+
+                <div class="inset-box">
+                    <div class="fw-bold text-rose" style="margin-bottom:0.35rem;">4. Virhelähteet ja hyvä mittaustapa (s. 22–23, 224, 369–370)</div>
+                    <ul style="margin:0; padding-left:1.1rem;">
+                        <li><strong>Tähtäysakselin kaltevuusvirhe (pääehto):</strong> Jos tähtäysakseli ei ole täysin vaakasuorassa, lattalukemaan syntyy etäisyyteen verrannollinen virhe. Virhe kumoutuu korkeuseroa Δ<i>H</i> = <i>t</i> − <i>e</i> laskettaessa, kun <strong>taakse- ja eteenmatkat ovat yhtä pitkät (<i>s</i><sub>t</sub> = <i>s</i><sub>e</sub>)</strong>.</li>
+                        <li><strong>Parallaksi:</strong> Jos kohdetta ei ole fokusoitu viivaristikon tasolle, ristikko liikkuu latan suhteen silmää siirrettäessä.</li>
+                        <li><strong>Latan pystysuoruus:</strong> Vino latta antaa aina liian suuren lukeman.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABOUT MODAL (TIETOJA) -->
+    <div id="about-modal" class="modal-backdrop hidden">
+        <div class="modal-box modal-sm">
+            <div class="modal-head">
+                <h2 class="modal-title">Tietoja sovelluksesta</h2>
+                <button onclick="toggleAboutModal()" class="btn btn-xs" aria-label="Sulje">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="inset-box" style="display:flex; align-items:center; gap:0.85rem;">
+                    <div class="logo-box" style="width:48px; height:48px;">
+                        <svg viewBox="0 0 40 40" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 17L6 35M13 17L20 35M13 17L13 36" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/>
+                            <rect x="6" y="10" width="14" height="7" rx="2" fill="#0f172a"/>
+                            <rect x="20" y="11.5" width="3" height="4" rx="0.8" fill="#0f172a"/>
+                            <line x1="23.5" y1="13.5" x2="31" y2="13.5" stroke="#dc2626" stroke-width="2" stroke-dasharray="2.5 2"/>
+                            <rect x="31" y="5" width="5.5" height="30" rx="1" fill="#ffffff" stroke="#0f172a" stroke-width="1.6"/>
+                            <path d="M32 8H35.5M32 14H35.5M32 20H35.5M32 26H35.5M32 32H35.5" stroke="#0f172a" stroke-width="1.4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="fw-bold" style="font-size:1.1rem; color:#ffffff;">Vaaituspeli <span class="mono text-amber" style="font-size:0.85rem;">v0.3</span></div>
+                        <div class="text-muted" style="font-size:0.75rem;">Opetussimulaattori vaaituksen perusteisiin</div>
+                    </div>
+                </div>
+
+                <div class="inset-box">
+                    <div class="about-row">
+                        <span class="text-muted">Yhteystiedot:</span>
+                        <a href="mailto:janne.matilainen@lapinamk.fi" class="about-link">janne.matilainen@lapinamk.fi</a>
+                    </div>
+                    <div class="about-row">
+                        <span class="text-muted">Lisenssi:</span>
+                        <span class="fw-semi text-emerald mono">MIT License</span>
+                    </div>
+                    <div class="about-row">
+                        <span class="text-muted">Toteutus:</span>
+                        <span class="fw-semi" style="color:#e2e8f0;">Laadittu tekoälyavusteisesti</span>
+                    </div>
+                </div>
+
+                <p class="panel-note">
+                    Teoreettisena lähteenä on käytetty Pasi Laurilan (2012) teosta <em>Mittaus- ja kartoitustekniikan perusteet</em> (Rovaniemen ammattikorkeakoulu, julkaisusarja D nro 3).
+                </p>
+
+                <div style="display:flex; justify-content:flex-end;">
+                    <button onclick="toggleAboutModal()" class="btn btn-amber btn-sm">Sulje</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION JAVASCRIPT -->
+    <script>
+        // ============================================================================
+        // GLOBAL STATE & SIMULATION DATA
+        // ============================================================================
+        // 1 = Korkeudenmääritys, 2 = Perinteinen jonovaaitus, 3 = Digitaalinen tarkkavaaitus, 4 = Korkeudenmerkintä
+        let currentMode = 1;
+        let aimDirection = 'back'; // 'back' (taakse t) or 'fore' (eteen e)
+        let currentStationIdx = 0; // Active station index in Mode 2 or 3
+        let showHint = false;
+        let staffSwayActive = false;
+        let swayPhase = 0;
+        let swayAngle = 0;
+        let swayLastTime = 0;
+        let swayAnimId = null;
+
+        // Instrument physical state (3 foot screws A, B, C + tripod base tilt)
+        let instState = {
+            baseTiltX: 2.8,
+            baseTiltY: -2.4,
+            screwA: 0.0,
+            screwB: 0.0,
+            screwC: 0.0,
+            diopter: 55,         // 0..100 (75 is sharp crosshair)
+            focusDist: 14.0,     // 5..60 m
+            eyeOffset: 0.0,      // -1..+1
+            collimationSlope: 0.00018 // Residual collimation error (0.18 mm / m)
+        };
+
+        let scenario = {
+            mode1: {},
+            mode2: {},
+            mode3: {},
+            mode4: {}
+        };
+
+        // ============================================================================
+        // INITIALIZATION & SCENARIO GENERATION
+        // ============================================================================
+        window.onload = function() {
+            generateNewScenario();
+            window.addEventListener('resize', () => {
+                drawProfile();
+            });
+        };
+
+        function roundMm(val) {
+            return Math.round(val * 1000) / 1000;
+        }
+
+        function round01Mm(val) {
+            return Math.round(val * 10000) / 10000;
+        }
+
+        function generateNewScenario() {
+            closeDiagnostics();
+
+            // --- 1. GENERATE MODE 1: KORKEUDENMÄÄRITYS (Single setup, known KP1 -> unknown P1) ---
+            const m1H1 = roundMm(75.000 + Math.floor(Math.random() * 20000) / 1000);
+            const m1DH = roundMm((Math.random() * 1.8) - 0.9); // between -0.9 m and +0.9 m
+            const m1H2 = roundMm(m1H1 + m1DH);
+            const m1SightH = roundMm(Math.max(m1H1, m1H2) + 0.75 + Math.floor(Math.random() * 900) / 1000);
+            const m1DistBack = roundMm(17 + Math.floor(Math.random() * 10));
+            const m1DistFore = roundMm(17 + Math.floor(Math.random() * 10));
+
+            scenario.mode1 = {
+                H1: m1H1,
+                H2: m1H2,
+                sightH: m1SightH,
+                distBack: m1DistBack,
+                distFore: m1DistFore,
+                trueT: roundMm(m1SightH - m1H1),
+                trueE: roundMm(m1SightH - m1H2),
+                trueDH: roundMm((m1SightH - m1H1) - (m1SightH - m1H2))
+            };
+
+            document.getElementById('m1-h1').textContent = scenario.mode1.H1.toFixed(3) + ' m';
+            ['m1-input-t', 'm1-input-e', 'm1-input-dh', 'm1-input-h2'].forEach(id => {
+                const el = document.getElementById(id);
+                el.value = '';
+                el.className = 'table-input input-lg';
+            });
+
+            // --- 2. GENERATE MODE 2: PERINTEINEN JONOVAAITUS (4 stations) ---
+            const kp1H = roundMm(82.100 + Math.floor(Math.random() * 4000) / 1000);
+            const dH_true = [
+                roundMm(Math.random() * 1.4 - 0.7),
+                roundMm(Math.random() * 1.4 - 0.7),
+                roundMm(Math.random() * 1.4 - 0.7),
+                roundMm(Math.random() * 1.4 - 0.7)
+            ];
+            const pts2 = [
+                { id: 'KP1', label: 'KP1 (Lähtöpiste)', H_true: kp1H, isFixed: true },
+                { id: 'vp1', label: 'vp1 (Vaihtopiste)', H_true: roundMm(kp1H + dH_true[0]), isFixed: false },
+                { id: 'P1',  label: 'P1 (Uusi kiintopiste)', H_true: roundMm(kp1H + dH_true[0] + dH_true[1]), isFixed: false, isNewBM: true },
+                { id: 'vp2', label: 'vp2 (Vaihtopiste)', H_true: roundMm(kp1H + dH_true[0] + dH_true[1] + dH_true[2]), isFixed: false },
+                { id: 'KP2', label: 'KP2 (Sulkupiste)', H_true: roundMm(kp1H + dH_true[0] + dH_true[1] + dH_true[2] + dH_true[3]), isFixed: true }
+            ];
+
+            const closureErrorsMm = [-4, 4, -8, 8];
+            const totalWhMm = closureErrorsMm[Math.floor(Math.random() * closureErrorsMm.length)];
+            const stationErrMm = totalWhMm / 4;
+
+            const stations2 = [];
+            for (let i = 0; i < 4; i++) {
+                const pBack = pts2[i];
+                const pFore = pts2[i + 1];
+                const minSight = Math.max(pBack.H_true, pFore.H_true) + 0.55;
+                const maxSight = Math.min(pBack.H_true, pFore.H_true) + 3.35;
+                const sightLevel = roundMm(minSight + Math.random() * Math.max(0.4, (maxSight - minSight)));
+                const t_val = roundMm(sightLevel - pBack.H_true);
+                const e_val = roundMm(sightLevel - pFore.H_true - (stationErrMm / 1000));
+
+                stations2.push({
+                    idx: i + 1,
+                    from: pBack.id,
+                    to: pFore.id,
+                    sightH: sightLevel,
+                    t_true: t_val,
+                    e_true: e_val,
+                    dH_true: roundMm(t_val - e_val),
+                    spanLength: 40.0,
+                    sliderPct: 50.0,
+                    s_back: 20.0,
+                    s_fore: 20.0
+                });
+            }
+
+            scenario.mode2 = {
+                points: pts2,
+                stations: stations2,
+                totalLength: 160.0,
+                expectedWh: roundMm(totalWhMm / 1000)
+            };
+            buildMode2Table();
+
+            // --- 3. GENERATE MODE 3: DIGITAALINEN TARKKAVAAITUS (3 stations) ---
+            const kp10H = round01Mm(54.2150 + Math.floor(Math.random() * 900) / 100);
+            const pts3 = [
+                { id: 'KP10',  label: 'KP10 (Lähtö)', H_true: kp10H },
+                { id: 'TP1',   label: 'TP1 (Kääntöpiste)', H_true: round01Mm(kp10H + 0.6420) },
+                { id: 'KP205', label: 'KP205 (Uusi peruspiste)', H_true: round01Mm(kp10H + 0.6420 - 0.4185) },
+                { id: 'KP11',  label: 'KP11 (Sulkupiste)', H_true: round01Mm(kp10H + 0.6420 - 0.4185 + 0.5120) }
+            ];
+            const stations3 = [];
+            const initialSliderPositions = [42, 56, 45];
+            for (let i = 0; i < 3; i++) {
+                const pBack = pts3[i];
+                const pFore = pts3[i + 1];
+                const sightLevel = round01Mm(Math.max(pBack.H_true, pFore.H_true) + 1.3520);
+                stations3.push({
+                    idx: i + 1,
+                    from: pBack.id,
+                    to: pFore.id,
+                    H_back: pBack.H_true,
+                    H_fore: pFore.H_true,
+                    sightH: sightLevel,
+                    spanLength: 50.0,
+                    sliderPct: initialSliderPositions[i],
+                    t_meas: null,
+                    e_meas: null,
+                    s_back: null,
+                    s_fore: null,
+                    corr: null,
+                    adjH: null
+                });
+            }
+
+            scenario.mode3 = {
+                points: pts3,
+                stations: stations3,
+                totalLength: 150.0,
+                isAdjusted: false
+            };
+            buildMode3Table();
+
+            // --- 4. GENERATE MODE 4: KORKEUDENMERKINTÄ (Former Mode 1) ---
+            const baseH1 = roundMm(138.0 + Math.floor(Math.random() * 1500) / 100);
+            const extraMm = Math.floor(Math.random() * 9) + 1;
+            const m4H1 = roundMm(baseH1 + extraMm / 1000);
+            const m4H2 = roundMm(Math.ceil((m4H1 + 1.15) * 10) / 10);
+            const m4SightH = roundMm(m4H2 + 0.85 + Math.floor(Math.random() * 600) / 1000);
+            const m4DistBack = roundMm(18 + Math.floor(Math.random() * 10));
+            const m4DistFore = roundMm(18 + Math.floor(Math.random() * 10));
+
+            scenario.mode4 = {
+                H1: m4H1,
+                H2: m4H2,
+                sightH: m4SightH,
+                distBack: m4DistBack,
+                distFore: m4DistFore,
+                trueT: roundMm(m4SightH - m4H1),
+                trueE: roundMm(m4SightH - m4H2),
+                staffOffsetZ: -0.145
+            };
+
+            document.getElementById('m4-h1').textContent = scenario.mode4.H1.toFixed(3) + ' m';
+            document.getElementById('m4-h2').textContent = scenario.mode4.H2.toFixed(3) + ' m';
+            ['m4-input-t', 'm4-input-hi', 'm4-input-e'].forEach(id => {
+                const el = document.getElementById(id);
+                el.value = '';
+                el.className = 'table-input input-lg';
+            });
+            document.getElementById('mode4-staff-slider').value = scenario.mode4.staffOffsetZ;
+            updateMode4StaffOffset(scenario.mode4.staffOffsetZ);
+
+            // Reset station, stop sway cleanly, and scramble instrument
+            stopSwayAndReset();
+            currentStationIdx = 0;
+            aimDirection = 'back';
+            scrambleInstrumentSetup();
+            updateStationButtons();
+            refreshAllViews();
+        }
+
+        function scrambleInstrumentSetup() {
+            const angle = Math.random() * Math.PI * 2;
+            const mag = 2.6 + Math.random() * 2.4;
+            instState.baseTiltX = Math.round(Math.cos(angle) * mag * 10) / 10;
+            instState.baseTiltY = Math.round(Math.sin(angle) * mag * 10) / 10;
+            instState.screwA = 0.0;
+            instState.screwB = 0.0;
+            instState.screwC = 0.0;
+            instState.diopter = 55;
+            instState.focusDist = 11.0;
+            instState.eyeOffset = 0;
+
+            document.getElementById('screw-a').value = 0;
+            document.getElementById('screw-b').value = 0;
+            document.getElementById('screw-c').value = 0;
+            document.getElementById('lbl-screw-a').textContent = '0.0';
+            document.getElementById('lbl-screw-b').textContent = '0.0';
+            document.getElementById('lbl-screw-c').textContent = '0.0';
+            document.getElementById('slider-diopter').value = instState.diopter;
+            document.getElementById('slider-focus').value = instState.focusDist;
+            document.getElementById('slider-eye').value = 0;
+        }
+
+        // Compute net spirit level bubble offset (X, Y) from 3 foot screws A, B, C (120° geometry)
+        function getBubbleOffset() {
+            const bx = instState.baseTiltX + (instState.screwB - instState.screwA) * 0.866;
+            const by = instState.baseTiltY + (instState.screwA + instState.screwB) * 0.5 - instState.screwC;
+            return { x: bx, y: by, radial: Math.hypot(bx, by) };
+        }
+
+        // ============================================================================
+        // MODE & STATION SWITCHING
+        // ============================================================================
+        function switchMode(mode) {
+            currentMode = mode;
+            currentStationIdx = 0;
+            aimDirection = 'back';
+            closeDiagnostics();
+
+            // Update Tabs & Sheets
+            for (let m = 1; m <= 4; m++) {
+                const btn = document.getElementById(`tab-${m}`);
+                btn.classList.toggle('active', m === mode);
+                document.getElementById(`sheet-mode-${m}`).classList.toggle('hidden', m !== mode);
+            }
+
+            const badge = document.getElementById('badge-mode');
+            const title = document.getElementById('title-mode');
+            const desc = document.getElementById('desc-mode');
+            const stContainer = document.getElementById('station-selector-container');
+            const m3Ctrl = document.getElementById('mode3-controls');
+            const m4Ctrl = document.getElementById('mode4-controls');
+            const stPosCtrl = document.getElementById('station-position-control');
+
+            // Reset aim button visual
+            document.getElementById('btn-aim-back').classList.add('active');
+            document.getElementById('btn-aim-fore').classList.remove('active');
+
+            if (mode === 1) {
+                badge.textContent = "Harjoitus 1 • Korkeudenmääritys";
+                title.textContent = "Pisteen korkeuden määrittäminen tunnetun kiintopisteen avulla";
+                desc.innerHTML = "Tasaa vaaituskoje kolmella jalkaruuvilla ja poista parallaksi. Lue taakselukema (<strong>t</strong>) tunnetulta korkeuskiintopisteeltä KP1 sekä eteenlukema (<strong>e</strong>) pisteeltä P1, ja laske pisteen P1 korkeus <i>H</i><sub>2</sub>.";
+                stContainer.classList.add('hidden');
+                m3Ctrl.classList.add('hidden');
+                m4Ctrl.classList.add('hidden');
+                stPosCtrl.classList.add('hidden');
+            } else if (mode === 2) {
+                badge.textContent = "Harjoitus 2 • Manuaalinen jonovaaitus";
+                title.textContent = "Perinteinen jonovaaitus optisella vaaituskojeella ja E-latalla";
+                desc.innerHTML = "Etene kojeasemalta 1 kojeasemalle 4. Sijoita koje lattojen puoliväliin, ota jokaisella asemalla taakse- (<strong>t</strong>) ja eteenlukema (<strong>e</strong>) omin silmin, kirjaa ne havaintokirjaan, laske korkeuserot, tarkista sulkuvirhe <i>w</i><sub>H</sub> ja tasoita korkeudet.";
+                stContainer.classList.remove('hidden');
+                m3Ctrl.classList.add('hidden');
+                m4Ctrl.classList.add('hidden');
+                stPosCtrl.classList.remove('hidden');
+                syncStationPosSliderUI();
+            } else if (mode === 3) {
+                badge.textContent = "Harjoitus 3 • Digitaalinen tarkkavaaitus";
+                title.textContent = "Jonovaaitus digitaalisella tarkkavaaituskojeella ja invar-viivakoodilatalla";
+                desc.innerHTML = "Tasaa tähtäysmatkat (<i>s</i><sub>t</sub> ≈ <i>s</i><sub>e</sub>) siirtämällä kojeasemaa, tarkenna viivakoodilatta ja suorita automaattinen viivakoodimittaus kaikilla 3 kojeasemalla. Tarkista päästäänkö peruskiintopisteiden <strong>5 ppm</strong> tarkkuuteen.";
+                stContainer.classList.remove('hidden');
+                m3Ctrl.classList.remove('hidden');
+                m4Ctrl.classList.add('hidden');
+                stPosCtrl.classList.remove('hidden');
+                syncStationPosSliderUI();
+            } else if (mode === 4) {
+                badge.textContent = "Harjoitus 4 • Korkeudenmerkintä";
+                title.textContent = "Korkeuden vienti ja rakennuksen perustuskorkeuden merkintä";
+                desc.innerHTML = "Tasaa koje kolmella jalkaruuvilla ja poista parallaksi. Ota taakselukema (<strong>t</strong>) kiintopisteeltä KP1, laske tähtäystason korkeus ja vaadittu eteenlukema (<strong>e</strong>). Käännä lopuksi tähtäys eteen ja säädä muottilatan korkeus oikeaan lukemaan.";
+                stContainer.classList.add('hidden');
+                m3Ctrl.classList.add('hidden');
+                m4Ctrl.classList.remove('hidden');
+                stPosCtrl.classList.add('hidden');
+            }
+
+            updateStationButtons();
+            refreshAllViews();
+        }
+
+        function updateStationButtons() {
+            const container = document.getElementById('station-buttons');
+            container.innerHTML = '';
+            const count = currentMode === 2 ? 4 : (currentMode === 3 ? 3 : 1);
+
+            for (let i = 0; i < count; i++) {
+                const btn = document.createElement('button');
+                const active = i === currentStationIdx;
+                btn.className = active ? "btn btn-xs btn-amber" : "btn btn-xs";
+                btn.textContent = `Asema ${i + 1}`;
+                btn.onclick = () => selectStation(i);
+                container.appendChild(btn);
+            }
+        }
+
+        function selectStation(idx) {
+            currentStationIdx = idx;
+            aimDirection = 'back';
+            document.getElementById('btn-aim-back').classList.add('active');
+            document.getElementById('btn-aim-fore').classList.remove('active');
+            if (currentMode === 2 || currentMode === 3) {
+                syncStationPosSliderUI();
+            }
+            updateStationButtons();
+            refreshAllViews();
+        }
+
+        function setAimDirection(dir) {
+            aimDirection = dir;
+            document.getElementById('btn-aim-back').classList.toggle('active', dir === 'back');
+            document.getElementById('btn-aim-fore').classList.toggle('active', dir === 'fore');
+            refreshAllViews();
+        }
+
+        // ============================================================================
+        // INSTRUMENT CONTROLS: LEVELLING (3 SCREWS), OPTICS, SWAY, POSITION
+        // ============================================================================
+        function adjustBubble() {
+            instState.screwA = parseFloat(document.getElementById('screw-a').value);
+            instState.screwB = parseFloat(document.getElementById('screw-b').value);
+            instState.screwC = parseFloat(document.getElementById('screw-c').value);
+            document.getElementById('lbl-screw-a').textContent = instState.screwA.toFixed(1);
+            document.getElementById('lbl-screw-b').textContent = instState.screwB.toFixed(1);
+            document.getElementById('lbl-screw-c').textContent = instState.screwC.toFixed(1);
+            refreshAllViews();
+        }
+
+        function isInstrumentLevelled() {
+            return getBubbleOffset().radial <= 1.5;
+        }
+
+        function getActiveTargetDistance() {
+            if (currentMode === 1) {
+                return aimDirection === 'back' ? scenario.mode1.distBack : scenario.mode1.distFore;
+            } else if (currentMode === 2) {
+                const st = scenario.mode2.stations[currentStationIdx];
+                st.s_back = roundMm((st.sliderPct / 100) * st.spanLength);
+                st.s_fore = roundMm(st.spanLength - st.s_back);
+                return aimDirection === 'back' ? st.s_back : st.s_fore;
+            } else if (currentMode === 3) {
+                const st = scenario.mode3.stations[currentStationIdx];
+                const sBack = roundMm((st.sliderPct / 100) * st.spanLength);
+                const sFore = roundMm(st.spanLength - sBack);
+                return aimDirection === 'back' ? sBack : sFore;
+            } else {
+                return aimDirection === 'back' ? scenario.mode4.distBack : scenario.mode4.distFore;
+            }
+        }
+
+        function updateOptics() {
+            instState.diopter = parseFloat(document.getElementById('slider-diopter').value);
+            instState.focusDist = parseFloat(document.getElementById('slider-focus').value);
+            instState.eyeOffset = parseFloat(document.getElementById('slider-eye').value);
+
+            const targetDist = getActiveTargetDistance();
+            const diopterDiff = Math.abs(instState.diopter - 75);
+            const focusDiff = Math.abs(instState.focusDist - targetDist);
+
+            document.getElementById('lbl-diopter').textContent = diopterDiff <= 5 ? "Terävä (OK)" : "Epäterävä";
+            document.getElementById('lbl-focus').textContent = instState.focusDist.toFixed(1) + " m";
+            document.getElementById('lbl-eye-offset').textContent =
+                Math.abs(instState.eyeOffset) < 0.05 ? "Keskellä" : (instState.eyeOffset > 0 ? "Ylhäällä" : "Alhaalla");
+
+            const badge = document.getElementById('optics-status-badge');
+            if (diopterDiff <= 5 && focusDiff <= 1.0) {
+                badge.textContent = "Parallaksiton (OK)";
+                badge.className = "badge badge-emerald";
+            } else {
+                badge.textContent = "Parallaksia";
+                badge.className = "badge badge-amber";
+            }
+
+            drawOcular();
+        }
+
+        function resetEyeCenter() {
+            document.getElementById('slider-eye').value = 0;
+            updateOptics();
+        }
+
+        function toggleReadingHint() {
+            showHint = !showHint;
+            document.getElementById('reading-hint-box').classList.toggle('hidden', !showHint);
+            drawOcular();
+        }
+
+        function stopSwayAndReset() {
+            staffSwayActive = false;
+            swayAngle = 0;
+            swayPhase = 0;
+            if (swayAnimId) cancelAnimationFrame(swayAnimId);
+            updateSwayButtonUI();
+        }
+
+        function updateSwayButtonUI() {
+            const btn = document.getElementById('btn-sway');
+            if (staffSwayActive) {
+                btn.innerHTML = '<span>Pysäytä heilutus</span>';
+                btn.className = "btn btn-sm btn-amber-outline";
+            } else if (Math.abs(swayAngle) > 0.25) {
+                btn.innerHTML = '<span>Jatka heilutusta</span>';
+                btn.className = "btn btn-sm btn-amber-outline";
+            } else {
+                btn.innerHTML = '<span>Heiluta lattaa</span>';
+                btn.className = "btn btn-sm";
+            }
+        }
+
+        function toggleStaffSway() {
+            staffSwayActive = !staffSwayActive;
+            if (staffSwayActive) {
+                // Start from a tilted angle rather than exact vertical (0)
+                if (Math.abs(swayAngle) < 0.5) {
+                    const sign = Math.random() > 0.5 ? 1 : -1;
+                    swayPhase = sign * (0.75 + Math.random() * 1.45);
+                    swayAngle = Math.sin(swayPhase) * 8.0;
+                }
+                swayLastTime = performance.now();
+                const animateSway = (now) => {
+                    if (!staffSwayActive) return;
+                    const dt = Math.min(0.1, (now - swayLastTime) / 1000);
+                    swayLastTime = now;
+                    swayPhase += dt * 0.90;
+                    swayAngle = Math.sin(swayPhase) * 8.0;
+                    drawOcular();
+                    drawProfile();
+                    swayAnimId = requestAnimationFrame(animateSway);
+                };
+                updateSwayButtonUI();
+                swayAnimId = requestAnimationFrame(animateSway);
+            } else {
+                // Stop in place without snapping to vertical
+                if (swayAnimId) cancelAnimationFrame(swayAnimId);
+                updateSwayButtonUI();
+                drawOcular();
+                drawProfile();
+            }
+        }
+
+        function updateMode4StaffOffset(val) {
+            scenario.mode4.staffOffsetZ = parseFloat(val);
+            const currentFootZ = roundMm(scenario.mode4.H2 + scenario.mode4.staffOffsetZ);
+            document.getElementById('mode4-staff-z-label').textContent = `Latan kanta: ${currentFootZ.toFixed(3)} m`;
+            refreshAllViews();
+        }
+
+        function nudgeMode4Staff(delta) {
+            const slider = document.getElementById('mode4-staff-slider');
+            let nextVal = roundMm(parseFloat(slider.value) + delta);
+            nextVal = Math.max(-0.5, Math.min(0.5, nextVal));
+            slider.value = nextVal;
+            updateMode4StaffOffset(nextVal);
+        }
+
+        function syncStationPosSliderUI() {
+            if (currentMode !== 2 && currentMode !== 3) return;
+            const st = currentMode === 2
+                ? scenario.mode2.stations[currentStationIdx]
+                : scenario.mode3.stations[currentStationIdx];
+            document.getElementById('inst-pos-slider').value = st.sliderPct;
+            const sBack = roundMm((st.sliderPct / 100) * st.spanLength);
+            const sFore = roundMm(st.spanLength - sBack);
+            document.getElementById('station-pos-readout').textContent =
+                `Taakse: ${sBack.toFixed(1)} m  |  Eteen: ${sFore.toFixed(1)} m`;
+        }
+
+        function updateInstrumentPosition(pct) {
+            if (currentMode !== 2 && currentMode !== 3) return;
+            const st = currentMode === 2
+                ? scenario.mode2.stations[currentStationIdx]
+                : scenario.mode3.stations[currentStationIdx];
+            st.sliderPct = Math.max(15, Math.min(85, parseFloat(pct)));
+            syncStationPosSliderUI();
+            refreshAllViews();
+        }
+
+        function nudgeInstrumentPosition(deltaPct) {
+            if (currentMode !== 2 && currentMode !== 3) return;
+            const st = currentMode === 2
+                ? scenario.mode2.stations[currentStationIdx]
+                : scenario.mode3.stations[currentStationIdx];
+            updateInstrumentPosition(st.sliderPct + deltaPct);
+        }
+
+        // ============================================================================
+        // COMPUTE CURRENT APPARENT STAFF READING (WITH REALISTIC ERROR MODEL)
+        // ============================================================================
+        function getCurrentTargetInfo() {
+            let baseReading = 1.500;
+            let targetDist = 20.0;
+            let targetLabel = "";
+
+            if (currentMode === 1) {
+                if (aimDirection === 'back') {
+                    baseReading = scenario.mode1.trueT;
+                    targetDist = scenario.mode1.distBack;
+                    targetLabel = "Taakse (t): Kiintopiste KP1";
+                } else {
+                    baseReading = scenario.mode1.trueE;
+                    targetDist = scenario.mode1.distFore;
+                    targetLabel = "Eteen (e): Määritettävä piste P1";
+                }
+            } else if (currentMode === 2) {
+                const st = scenario.mode2.stations[currentStationIdx];
+                st.s_back = roundMm((st.sliderPct / 100) * st.spanLength);
+                st.s_fore = roundMm(st.spanLength - st.s_back);
+                if (aimDirection === 'back') {
+                    baseReading = st.t_true;
+                    targetDist = st.s_back;
+                    targetLabel = `Asema ${st.idx} • Taakse (t): ${st.from}`;
+                } else {
+                    baseReading = st.e_true;
+                    targetDist = st.s_fore;
+                    targetLabel = `Asema ${st.idx} • Eteen (e): ${st.to}`;
+                }
+            } else if (currentMode === 3) {
+                const st = scenario.mode3.stations[currentStationIdx];
+                const sBack = roundMm((st.sliderPct / 100) * st.spanLength);
+                const sFore = roundMm(st.spanLength - sBack);
+                if (aimDirection === 'back') {
+                    targetDist = sBack;
+                    baseReading = (st.sightH - st.H_back) + instState.collimationSlope * sBack;
+                    targetLabel = `Asema ${st.idx} • Taakse (t): ${st.from}`;
+                } else {
+                    targetDist = sFore;
+                    baseReading = (st.sightH - st.H_fore) + instState.collimationSlope * sFore;
+                    targetLabel = `Asema ${st.idx} • Eteen (e): ${st.to}`;
+                }
+            } else if (currentMode === 4) {
+                if (aimDirection === 'back') {
+                    baseReading = scenario.mode4.trueT;
+                    targetDist = scenario.mode4.distBack;
+                    targetLabel = "Taakse (t): Kiintopiste KP1";
+                } else {
+                    const staffFootZ = scenario.mode4.H2 + scenario.mode4.staffOffsetZ;
+                    baseReading = scenario.mode4.sightH - staffFootZ;
+                    targetDist = scenario.mode4.distFore;
+                    targetLabel = "Eteen (e): Rakennuksen muotti";
+                }
+            }
+
+            // 1. Unlevelled instrument error
+            const bubble = getBubbleOffset();
+            let tiltError = 0;
+            // 2. Parallax shift: smoothly approaches 0 inside the "Parallaksiton (OK)" zone
+            const focusDiff = instState.focusDist - targetDist;
+            const absFocusDiff = Math.abs(focusDiff);
+            const diopterExcess = Math.max(0, Math.abs(instState.diopter - 75) - 5);
+            const focusParallax = absFocusDiff <= 1.0
+                ? Math.sign(focusDiff) * (absFocusDiff * absFocusDiff) * 0.00025
+                : Math.sign(focusDiff) * (0.00025 + (absFocusDiff - 1.0) * 0.0032);
+            const diopterParallax = diopterExcess > 0
+                ? Math.sign(instState.diopter - 75) * (diopterExcess * 0.00025)
+                : 0;
+            const parallaxShift = (focusParallax + diopterParallax) * instState.eyeOffset;
+
+            // 3. Staff sway effect (l' = l / cos(theta))
+            const swayRad = (swayAngle * Math.PI) / 180;
+            const swayFactor = 1 / Math.cos(swayRad);
+
+            const staffCenterReading = (baseReading + tiltError) * swayFactor;
+            const apparentReading = staffCenterReading + parallaxShift;
+
+            return {
+                trueReading: baseReading,
+                staffCenterReading: staffCenterReading,
+                apparentReading: apparentReading,
+                distance: targetDist,
+                label: targetLabel,
+                tiltError: tiltError,
+                parallaxShift: parallaxShift
+            };
+        }
+
+        function refreshAllViews() {
+            drawBubbleLevel();
+            updateOptics();
+            drawProfile();
+            drawOcular();
+            if (currentMode === 3) {
+                updateDigitalLCDPreview();
+            }
+        }
+
+        // ============================================================================
+        // CANVAS 1: CIRCULAR SPIRIT LEVEL (RASIATASAIN + JALKARUUVIT A, B, C)
+        // ============================================================================
+        function drawBubbleLevel() {
+            const canvas = document.getElementById('bubbleCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2 + 2;
+            const radius = 39;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Foot screw labels A, B, C
+            const screwsMeta = [
+                { lbl: 'C', x: cx, y: cy - radius - 14 },
+                { lbl: 'A', x: cx - (radius + 14) * 0.866, y: cy + (radius + 14) * 0.5 },
+                { lbl: 'B', x: cx + (radius + 14) * 0.866, y: cy + (radius + 14) * 0.5 }
+            ];
+            screwsMeta.forEach(s => {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 9, 0, Math.PI * 2);
+                ctx.fillStyle = '#1e293b';
+                ctx.fill();
+                ctx.lineWidth = 1.2;
+                ctx.strokeStyle = '#f59e0b';
+                ctx.stroke();
+
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = 'bold 10px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(s.lbl, s.x, s.y + 0.5);
+            });
+
+            // Outer housing
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius + 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#334155';
+            ctx.fill();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#64748b';
+            ctx.stroke();
+
+            // Vial liquid
+            const grad = ctx.createRadialGradient(cx - 7, cy - 7, 4, cx, cy, radius);
+            grad.addColorStop(0, '#ecfccb');
+            grad.addColorStop(0.75, '#bef264');
+            grad.addColorStop(1, '#65a30d');
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Bubble offset clamped within vial
+            const bubble = getBubbleOffset();
+            const maxTravel = radius - 10;
+            let bx = cx + (bubble.x / 7.5) * maxTravel;
+            let by = cy + (bubble.y / 7.5) * maxTravel;
+            const distFromCenter = Math.hypot(bx - cx, by - cy);
+            if (distFromCenter > maxTravel) {
+                bx = cx + ((bx - cx) / distFromCenter) * maxTravel;
+                by = cy + ((by - cy) / distFromCenter) * maxTravel;
+            }
+
+            // Air bubble
+            const bGrad = ctx.createRadialGradient(bx - 3, by - 3, 2, bx, by, 10);
+            bGrad.addColorStop(0, '#ffffff');
+            bGrad.addColorStop(0.7, '#f8fafc');
+            bGrad.addColorStop(1, '#4d7c0f');
+            ctx.beginPath();
+            ctx.arc(bx, by, 9, 0, Math.PI * 2);
+            ctx.fillStyle = bGrad;
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#365314';
+            ctx.stroke();
+
+            // Center target ring
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#1e293b';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(cx - 20, cy); ctx.lineTo(cx - 12, cy);
+            ctx.moveTo(cx + 12, cy); ctx.lineTo(cx + 20, cy);
+            ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy - 12);
+            ctx.moveTo(cx, cy + 12); ctx.lineTo(cx, cy + 20);
+            ctx.strokeStyle = 'rgba(30,41,59,0.5)';
+            ctx.stroke();
+
+            // Status badge
+            const badge = document.getElementById('level-status-badge');
+            if (bubble.radial <= 1.5) {
+                badge.textContent = "Tasattu (OK)";
+                badge.className = "badge badge-emerald";
+            } else if (bubble.radial <= 3.5) {
+                badge.textContent = "Lähes tasattu";
+                badge.className = "badge badge-amber";
+            } else {
+                badge.textContent = "Tasaamaton!";
+                badge.className = "badge badge-rose";
+            }
+        }
+
+        function getProfileSightRayVisual(dir) {
+            const bubble = getBubbleOffset();
+            let color = '#10b981';
+            let tiltPx = 0;
+
+            if (bubble.radial <= 1.5) {
+                color = '#10b981';
+                tiltPx = 0;
+            } else {
+                color = bubble.radial <= 3.5 ? '#f59e0b' : '#ef4444';
+                const dirSign = dir === 'back' ? 1 : -1;
+                const dominantTilt = Math.abs(bubble.x) > 0.6 ? bubble.x : (bubble.y >= 0 ? bubble.radial * 0.65 : -bubble.radial * 0.65);
+                tiltPx = Math.max(-42, Math.min(42, dirSign * dominantTilt * 6.5));
+            }
+            return { color, tiltPx, radial: bubble.radial };
+        }
+
+        // ============================================================================
+        // CANVAS 2: TERRAIN & VERTICAL PROFILE VIEW (MAASTOPROFIILI)
+        // ============================================================================
+        function drawProfile() {
+            const canvas = document.getElementById('profileCanvas');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            const w = rect.width;
+            const h = rect.height;
+
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+            skyGrad.addColorStop(0, '#09101d');
+            skyGrad.addColorStop(1, '#1e293b');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            if (currentMode === 1) {
+                drawProfileMode1(ctx, w, h);
+            } else if (currentMode === 4) {
+                drawProfileMode4(ctx, w, h);
+            } else {
+                drawProfileLineMode(ctx, w, h);
+            }
+        }
+
+        // Mode 1 Profile: Simple single-setup height determination (KP1 -> P1)
+        function drawProfileMode1(ctx, w, h) {
+            const m1 = scenario.mode1;
+            const minH = Math.min(m1.H1, m1.H2) - 0.8;
+            const maxH = m1.sightH + 1.4;
+            const yOf = (elev) => h - 32 - ((elev - minH) / (maxH - minH)) * (h - 58);
+
+            const xKP1 = w * 0.16;
+            const xInst = w * 0.50;
+            const xP1 = w * 0.84;
+
+            const yKP1 = yOf(m1.H1);
+            const yP1 = yOf(m1.H2);
+            const yInstGround = yOf((m1.H1 + m1.H2) * 0.5);
+
+            // Ground terrain polygon
+            ctx.beginPath();
+            ctx.moveTo(0, yKP1 + 6);
+            ctx.lineTo(xKP1, yKP1);
+            ctx.lineTo(xInst, yInstGround);
+            ctx.lineTo(xP1, yP1);
+            ctx.lineTo(w, yP1 + 4);
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#475569';
+            ctx.stroke();
+
+            // Known Benchmark KP1 (left)
+            ctx.beginPath();
+            ctx.arc(xKP1, yKP1, 5.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fill();
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`KP1 (${m1.H1.toFixed(3)} m)`, xKP1, yKP1 + 20);
+
+            // Unknown Target Point P1 (right)
+            ctx.beginPath();
+            ctx.arc(xP1, yP1, 5.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#34d399';
+            ctx.fill();
+            ctx.fillStyle = '#6ee7b7';
+            ctx.fillText('Piste P1 (H₂ = ?)', xP1, yP1 + 20);
+            ctx.textAlign = 'left';
+
+            // Staffs
+            drawMiniStaff(ctx, xKP1, yKP1, yOf(m1.H1 + 3.1), aimDirection === 'back', aimDirection === 'back' ? swayAngle : 0);
+            drawMiniStaff(ctx, xP1, yP1, yOf(m1.H2 + 3.1), aimDirection === 'fore', aimDirection === 'fore' ? swayAngle : 0);
+
+            // Instrument & Sight Ray
+            const ySight = yOf(m1.sightH);
+            const rayVis = getProfileSightRayVisual(aimDirection);
+            drawMiniInstrument(ctx, xInst, yInstGround, ySight, aimDirection, rayVis.tiltPx);
+
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = 2.6;
+            ctx.strokeStyle = rayVis.color;
+            ctx.beginPath();
+            ctx.moveTo(xInst, ySight);
+            const targetX = aimDirection === 'back' ? xKP1 : xP1;
+            ctx.lineTo(targetX, ySight + rayVis.tiltPx);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Mode 4 Profile: Korkeudenmerkintä (KP1 plinth -> formwork wall)
+        function drawProfileMode4(ctx, w, h) {
+            const m4 = scenario.mode4;
+            const minH = m4.H1 - 0.8;
+            const maxH = m4.sightH + 1.2;
+            const yOf = (elev) => h - 30 - ((elev - minH) / (maxH - minH)) * (h - 55);
+
+            const xKP1 = w * 0.16;
+            const xInst = w * 0.50;
+            const xForm = w * 0.84;
+
+            const yKP1 = yOf(m4.H1);
+            const yInstGround = yOf(m4.sightH - 1.55);
+            const yFormGround = yOf(m4.H2 - 0.8);
+
+            // Ground terrain polygon
+            ctx.beginPath();
+            ctx.moveTo(0, yKP1 + 10);
+            ctx.lineTo(xKP1, yKP1);
+            ctx.lineTo(xInst, yInstGround);
+            ctx.lineTo(xForm, yFormGround);
+            ctx.lineTo(w, yFormGround);
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#475569';
+            ctx.stroke();
+
+            // Left building wall + benchmark bolt KP1
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(xKP1 - 45, yKP1 - 85, 45, 95);
+            ctx.strokeStyle = '#64748b';
+            ctx.strokeRect(xKP1 - 45, yKP1 - 85, 45, 95);
+
+            ctx.beginPath();
+            ctx.arc(xKP1 + 2, yKP1, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fill();
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(`KP1 (${m4.H1.toFixed(3)} m)`, xKP1 - 42, yKP1 + 22);
+
+            // Right construction formwork wall
+            const yDesign = yOf(m4.H2);
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(xForm, yDesign - 40, 28, (yFormGround - (yDesign - 40)));
+            ctx.strokeStyle = '#94a3b8';
+            ctx.strokeRect(xForm, yDesign - 40, 28, (yFormGround - (yDesign - 40)));
+
+            // Dashed target line for H2
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.moveTo(xForm - 35, yDesign);
+            ctx.lineTo(xForm + 45, yDesign);
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(`Tavoite H₂ = ${m4.H2.toFixed(3)} m`, xForm - 75, yDesign + 16);
+
+            // Staffs
+            drawMiniStaff(ctx, xKP1 + 2, yKP1, yOf(m4.H1 + 3.0), aimDirection === 'back', aimDirection === 'back' ? swayAngle : 0);
+            const staffFootElev = m4.H2 + m4.staffOffsetZ;
+            drawMiniStaff(ctx, xForm - 2, yOf(staffFootElev), yOf(staffFootElev + 3.0), aimDirection === 'fore', aimDirection === 'fore' ? swayAngle : 0);
+
+            // Instrument & Sight Ray
+            const ySight = yOf(m4.sightH);
+            const rayVis = getProfileSightRayVisual(aimDirection);
+            drawMiniInstrument(ctx, xInst, yInstGround, ySight, aimDirection, rayVis.tiltPx);
+
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = 2.6;
+            ctx.strokeStyle = rayVis.color;
+            ctx.beginPath();
+            ctx.moveTo(xInst, ySight);
+            const targetX = aimDirection === 'back' ? xKP1 + 2 : xForm - 2;
+            ctx.lineTo(targetX, ySight + rayVis.tiltPx);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Mode 2 & 3 Profile: Multi-station line levelling
+        function drawProfileLineMode(ctx, w, h) {
+            const isMode2 = currentMode === 2;
+            const pts = isMode2 ? scenario.mode2.points : scenario.mode3.points;
+            const stations = isMode2 ? scenario.mode2.stations : scenario.mode3.stations;
+
+            let minH = Infinity, maxH = -Infinity;
+            pts.forEach(p => {
+                if (p.H_true < minH) minH = p.H_true;
+                if (p.H_true > maxH) maxH = p.H_true;
+            });
+            minH -= 1.0;
+            maxH += 3.8;
+
+            const yOf = (elev) => h - 28 - ((elev - minH) / (maxH - minH)) * (h - 50);
+            const marginX = 52;
+            const usableW = w - marginX * 2;
+            const xOfPt = (i) => marginX + (i / (pts.length - 1)) * usableW;
+
+            ctx.beginPath();
+            ctx.moveTo(0, yOf(pts[0].H_true));
+            pts.forEach((p, idx) => ctx.lineTo(xOfPt(idx), yOf(p.H_true)));
+            ctx.lineTo(w, yOf(pts[pts.length - 1].H_true));
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#475569';
+            ctx.stroke();
+
+            pts.forEach((p, idx) => {
+                const px = xOfPt(idx);
+                const py = yOf(p.H_true);
+
+                ctx.beginPath();
+                ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+                ctx.fillStyle = (idx === 0 || idx === pts.length - 1 || p.isNewBM) ? '#38bdf8' : '#94a3b8';
+                ctx.fill();
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(p.id, px, py + 17);
+
+                if (idx === currentStationIdx || idx === currentStationIdx + 1) {
+                    const isAimedAt = (idx === currentStationIdx && aimDirection === 'back') ||
+                                      (idx === currentStationIdx + 1 && aimDirection === 'fore');
+                    drawMiniStaff(ctx, px, py, yOf(p.H_true + 3.2), isAimedAt, isAimedAt ? swayAngle : 0);
+                }
+            });
+
+            const st = stations[currentStationIdx];
+            const xBack = xOfPt(currentStationIdx);
+            const xFore = xOfPt(currentStationIdx + 1);
+            const pct = st.sliderPct / 100;
+            const xInst = xBack + pct * (xFore - xBack);
+            const groundElevAtInst = pts[currentStationIdx].H_true * (1 - pct) + pts[currentStationIdx + 1].H_true * pct;
+            const yInstGround = yOf(groundElevAtInst);
+            const ySight = yOf(st.sightH);
+
+            const rayVis = getProfileSightRayVisual(aimDirection);
+            drawMiniInstrument(ctx, xInst, yInstGround, ySight, aimDirection, rayVis.tiltPx);
+
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = 2.6;
+            ctx.strokeStyle = rayVis.color;
+            ctx.beginPath();
+            ctx.moveTo(xInst, ySight);
+            const targetX = aimDirection === 'back' ? xBack : xFore;
+            ctx.lineTo(targetX, ySight + rayVis.tiltPx);
+            ctx.stroke();
+            ctx.restore();
+            ctx.textAlign = 'left';
+        }
+
+        function drawMiniStaff(ctx, x, yBottom, yTop, isHighlighted, tiltDeg = 0) {
+            ctx.save();
+            ctx.translate(x, yBottom);
+            if (Math.abs(tiltDeg) > 0.05) {
+                ctx.rotate((tiltDeg * 1.4 * Math.PI) / 180);
+            }
+            const staffLen = yBottom - yTop;
+            ctx.lineWidth = isHighlighted ? 5 : 3.5;
+            ctx.strokeStyle = isHighlighted ? '#fbbf24' : '#cbd5e1';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -staffLen);
+            ctx.stroke();
+
+            ctx.lineWidth = isHighlighted ? 5 : 3.5;
+            ctx.strokeStyle = '#ef4444';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -staffLen);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawMiniInstrument(ctx, x, yGround, ySight, dir, tiltPx = 0) {
+            ctx.save();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.moveTo(x - 10, yGround + 2); ctx.lineTo(x, ySight + 4);
+            ctx.moveTo(x + 10, yGround + 2); ctx.lineTo(x, ySight + 4);
+            ctx.moveTo(x, yGround + 4);      ctx.lineTo(x, ySight + 4);
+            ctx.stroke();
+
+            ctx.translate(x, ySight);
+            const headAngle = Math.atan2(tiltPx, dir === 'back' ? -110 : 110);
+            ctx.rotate(dir === 'back' ? headAngle - Math.PI : headAngle);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(-9, -4, 18, 8);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(8, -2, 4, 4);
+            ctx.restore();
+        }
+
+        // ============================================================================
+        // CANVAS 3: TELESCOPE OCULAR VIEW (REFERENCE STAFF FORMAT: Baak.svg)
+        // ============================================================================
+        function drawOcular() {
+            const canvas = document.getElementById('ocularCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const r = w / 2 - 6;
+
+            const info = getCurrentTargetInfo();
+            document.getElementById('ocular-target-pill').textContent = info.label;
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+
+            // Crisp bright field-of-view background
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+            bgGrad.addColorStop(0, '#eef6fb');
+            bgGrad.addColorStop(1, '#dce8f2');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            const focusError = Math.abs(instState.focusDist - info.distance);
+            const imageBlurPx = Math.min(7.5, Math.max(0, (focusError - 0.8) * 0.42));
+
+            // Stadia interval factor = 100
+            const stadiaSeparationPx = 160;
+            const stadiaSpanMeters = info.distance / 100.0;
+            const pxPerMeter = stadiaSeparationPx / stadiaSpanMeters;
+
+            ctx.save();
+            if (imageBlurPx > 0.2) {
+                ctx.filter = `blur(${imageBlurPx.toFixed(1)}px)`;
+            }
+
+            // Staff horizontal placement (centered around vertical crosshair, matching Baak.svg proportions)
+            const staffWidth = 58;
+            const staffLeft = cx - staffWidth * 0.44;
+
+            const halfVisibleMeters = (h / 2) / pxPerMeter + 0.14;
+            const minVisM = Math.max(0, info.staffCenterReading - halfVisibleMeters);
+            const maxVisM = Math.min(4.0, info.staffCenterReading + halfVisibleMeters);
+
+            const yForReading = (mVal) => cy - (mVal - info.staffCenterReading) * pxPerMeter;
+
+            const yTopStaff = yForReading(maxVisM);
+            const yBotStaff = yForReading(minVisM);
+
+            // White staff face
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(staffLeft, yTopStaff, staffWidth, yBotStaff - yTopStaff);
+
+            if (currentMode === 3) {
+                drawBarcodeStaffPattern(ctx, staffLeft, staffWidth, minVisM, maxVisM, yForReading);
+            } else {
+                drawReferenceEStaffPattern(ctx, staffLeft, staffWidth, minVisM, maxVisM, yForReading, pxPerMeter);
+            }
+
+            // Thick crisp vertical outer borders (as in Baak.svg)
+            ctx.lineWidth = 2.6;
+            ctx.strokeStyle = '#090d16';
+            ctx.beginPath();
+            ctx.moveTo(staffLeft, yTopStaff);
+            ctx.lineTo(staffLeft, yBotStaff);
+            ctx.moveTo(staffLeft + staffWidth, yTopStaff);
+            ctx.lineTo(staffLeft + staffWidth, yBotStaff);
+            ctx.stroke();
+
+            ctx.restore(); // End target blur
+
+            // DRAW TELESCOPE CROSSHAIR (shifted by parallax when out of focus + eye offset)
+            const parallaxPx = -info.parallaxShift * pxPerMeter;
+            const crosshairY = cy + parallaxPx;
+
+            const diopterError = Math.abs(instState.diopter - 75);
+            const crosshairBlur = Math.min(5, Math.max(0, (diopterError - 4) * 0.12));
+
+            ctx.save();
+            if (crosshairBlur > 0.2) {
+                ctx.filter = `blur(${crosshairBlur.toFixed(1)}px)`;
+            }
+
+            ctx.strokeStyle = '#262626';
+            ctx.lineWidth = 1.5;
+
+            // Vertical hair
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, h);
+            ctx.stroke();
+
+            // Main horizontal hair
+            ctx.beginPath();
+            ctx.moveTo(0, crosshairY);
+            ctx.lineTo(w, crosshairY);
+            ctx.stroke();
+
+            // Upper & lower stadia hairs
+            const stadiaHalfPx = stadiaSeparationPx / 2;
+            const stadiaHalfWidth = 44;
+            ctx.beginPath();
+            ctx.moveTo(cx - stadiaHalfWidth, crosshairY - stadiaHalfPx);
+            ctx.lineTo(cx + stadiaHalfWidth, crosshairY - stadiaHalfPx);
+            ctx.moveTo(cx - stadiaHalfWidth, crosshairY + stadiaHalfPx);
+            ctx.lineTo(cx + stadiaHalfWidth, crosshairY + stadiaHalfPx);
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Subtle ocular vignette
+            const vigY = cy + instState.eyeOffset * 14;
+            const vig = ctx.createRadialGradient(cx, vigY, r * 0.76, cx, cy, r);
+            vig.addColorStop(0, 'rgba(0,0,0,0)');
+            vig.addColorStop(1, 'rgba(0,0,0,0.48)');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.restore(); // End circular clip
+
+            // Outer bezel
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = '#1e293b';
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#475569';
+            ctx.stroke();
+
+            if (showHint) {
+                const upperRead = info.apparentReading + stadiaSpanMeters / 2;
+                const lowerRead = info.apparentReading - stadiaSpanMeters / 2;
+                const swayNote = Math.abs(swayAngle) > 0.25 ? ` | Latta vinossa (${swayAngle.toFixed(1)}°)` : '';
+                document.getElementById('hint-live-values').textContent =
+                    `Vaakaviiva: ${info.apparentReading.toFixed(3)} m | Etäisyysviivat: ${upperRead.toFixed(3)} & ${lowerRead.toFixed(3)} (s ≈ ${info.distance.toFixed(1)} m)${swayNote}`;
+            }
+        }
+
+        // Draws E-pattern metric staff strictly following the Baak.svg reference:
+        // - Horizontal black line across full staff width at every decimeter (dm * 0.10 m)
+        // - Meter color coding: even meters (0.xx, 2.xx) black, odd meters (1.xx, 3.xx) vibrant red (#ef4444)
+        // - Lower 5 cm (0-5 cm):
+        //     Left side: NO spine; two 1 cm colored blocks at 1-2 cm and 3-4 cm (aligned with E prong tips)
+        //     Right side: Tall, horizontally condensed black decimeter number (e.g. 13, 14, 15)
+        // - Upper 5 cm (5-10 cm):
+        //     Left side: Colored E-shape (vertical spine on far left, 3 horizontal prongs at 5-6, 7-8, 9-10 cm)
+        //     Right side: Pure white
+        function drawReferenceEStaffPattern(ctx, staffLeft, staffWidth, minVisM, maxVisM, yForReading, pxPerMeter) {
+            const startDm = Math.max(0, Math.floor(minVisM * 10));
+            const endDm = Math.min(39, Math.ceil(maxVisM * 10));
+
+            const innerLeft = staffLeft + 1.3;
+            const innerRight = staffLeft + staffWidth - 1.3;
+            const innerW = innerRight - innerLeft;
+
+            const spineW = innerW * 0.21;
+            const blockRightX = innerLeft + innerW * 0.54;
+            const blockTipLeftX = innerLeft + spineW;
+            const numCenterX = blockRightX + (innerRight - blockRightX) * 0.50;
+
+            for (let dm = startDm; dm <= endDm; dm++) {
+                const meterIdx = Math.floor(dm / 10);
+                const color = (meterIdx % 2 === 0) ? '#111827' : '#ef4444';
+                ctx.fillStyle = color;
+
+                // 1. LOWER 5 cm (0-5 cm): Two 1 cm colored bars at 1-2 cm and 3-4 cm (no left spine)
+                [1, 3].forEach(c => {
+                    const yBot = yForReading(dm * 0.10 + c * 0.01);
+                    const yTop = yForReading(dm * 0.10 + (c + 1) * 0.01);
+                    ctx.fillRect(blockTipLeftX, yTop, blockRightX - blockTipLeftX, yBot - yTop);
+                });
+
+                // Tall condensed black decimeter number in right half of 0-5 cm
+                const yNumMid = yForReading(dm * 0.10 + 0.0245);
+                const cmPx = pxPerMeter * 0.01;
+                const fontSize = Math.max(11, Math.min(34, cmPx * 3.8));
+                ctx.save();
+                ctx.translate(numCenterX, yNumMid);
+                ctx.scale(0.56, 1.12);
+                ctx.fillStyle = '#090d16';
+                ctx.font = `600 ${fontSize.toFixed(1)}px system-ui, -apple-system, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(String(dm).padStart(2, '0'), 0, 0);
+                ctx.restore();
+
+                // 2. UPPER 5 cm (5-10 cm): Colored E-pattern on left half
+                ctx.fillStyle = color;
+                const y05 = yForReading(dm * 0.10 + 0.05);
+                const y10 = yForReading((dm + 1) * 0.10);
+
+                // Vertical spine touching left inner border
+                ctx.fillRect(innerLeft, y10, spineW, y05 - y10);
+
+                // Three 1 cm prongs at 5-6, 7-8, 9-10 cm
+                [5, 7, 9].forEach(c => {
+                    const yBot = yForReading(dm * 0.10 + c * 0.01);
+                    const yTop = yForReading(dm * 0.10 + (c + 1) * 0.01);
+                    ctx.fillRect(innerLeft, yTop, blockRightX - innerLeft, yBot - yTop);
+                });
+
+                // 3. Full-width crisp black horizontal line at exact decimeter mark (dm.00)
+                const y00 = yForReading(dm * 0.10);
+                ctx.beginPath();
+                ctx.moveTo(staffLeft, y00);
+                ctx.lineTo(staffLeft + staffWidth, y00);
+                ctx.lineWidth = 1.9;
+                ctx.strokeStyle = '#090d16';
+                ctx.stroke();
+            }
+        }
+
+        // Draws pseudo-random deterministic barcode pattern for Invar Digital Staff (Mode 3)
+        function drawBarcodeStaffPattern(ctx, staffLeft, staffWidth, minVisM, maxVisM, yForReading) {
+            ctx.fillStyle = '#fef9c3';
+            ctx.fillRect(staffLeft + 4, yForReading(maxVisM), staffWidth - 8, yForReading(minVisM) - yForReading(maxVisM));
+
+            const startMm = Math.floor(minVisM * 500);
+            const endMm = Math.ceil(maxVisM * 500);
+
+            ctx.fillStyle = '#090d16';
+            for (let idx = startMm; idx <= endMm; idx++) {
+                if (idx < 0) continue;
+                const hash = Math.sin(idx * 12.9898) * 43758.5453;
+                const frac = hash - Math.floor(hash);
+                if (frac > 0.46) {
+                    const yBot = yForReading(idx / 500.0);
+                    const yTop = yForReading((idx + 1) / 500.0);
+                    ctx.fillRect(staffLeft + 6, yTop, staffWidth - 12, Math.max(1, yBot - yTop));
+                }
+            }
+        }
+
+        // ============================================================================
+        // EXERCISE 1 LOGIC: KORKEUDENMÄÄRITYS (NEW)
+        // ============================================================================
+        function verifyMode1() {
+            const m1 = scenario.mode1;
+            const userT = parseFloat(document.getElementById('m1-input-t').value);
+            const userE = parseFloat(document.getElementById('m1-input-e').value);
+            const userDh = parseFloat(document.getElementById('m1-input-dh').value);
+            const userH2 = parseFloat(document.getElementById('m1-input-h2').value);
+
+            const issues = [];
+            let allGood = true;
+
+            if (!isInstrumentLevelled()) {
+                issues.push("• <strong>Vaaituskoje on tasaamaton:</strong> Rasiatasaimen kupla ei ole keskellä, joten tähtäyssäde on kallistunut.");
+                allGood = false;
+            }
+
+            const tOk = !isNaN(userT) && Math.abs(userT - m1.trueT) <= 0.002;
+            const eOk = !isNaN(userE) && Math.abs(userE - m1.trueE) <= 0.002;
+            const dhOk = !isNaN(userDh) && Math.abs(userDh - m1.trueDH) <= 0.003;
+            const h2Ok = !isNaN(userH2) && Math.abs(userH2 - m1.H2) <= 0.003;
+
+            setInputValidationState('m1-input-t', tOk);
+            setInputValidationState('m1-input-e', eOk);
+            setInputValidationState('m1-input-dh', dhOk);
+            setInputValidationState('m1-input-h2', h2Ok);
+
+            if (!tOk) {
+                issues.push(`• <strong>Taakselukema <i>t</i>:</strong> Kirjasit <span class="mono">${isNaN(userT) ? 'tyhjä' : userT.toFixed(3)} m</span>, kun oikea lukema kiintopisteeltä KP1 on <span class="mono">${m1.trueT.toFixed(3)} m</span>.`);
+                allGood = false;
+            }
+            if (!eOk) {
+                issues.push(`• <strong>Eteenlukema <i>e</i>:</strong> Kirjasit <span class="mono">${isNaN(userE) ? 'tyhjä' : userE.toFixed(3)} m</span>, kun oikea lukema pisteeltä P1 on <span class="mono">${m1.trueE.toFixed(3)} m</span>.`);
+                allGood = false;
+            }
+            if (!dhOk) {
+                const swappedSign = !isNaN(userDh) && Math.abs(userDh + m1.trueDH) <= 0.004;
+                if (swappedSign) {
+                    issues.push(`• <strong>Korkeuseron etumerkki on väärin:</strong> Laskit nähtävästi <i>e</i> − <i>t</i>. Oikea kaava on Δ<i>H</i> = <i>t</i> − <i>e</i> = <span class="mono">${m1.trueDH >= 0 ? '+' : ''}${m1.trueDH.toFixed(3)} m</span>.`);
+                } else {
+                    issues.push(`• <strong>Korkeusero Δ<i>H</i> = <i>t</i> − <i>e</i>:</strong> Laskit <span class="mono">${isNaN(userDh) ? 'tyhjä' : userDh.toFixed(3)} m</span>, kun oikea arvo on <span class="mono">${m1.trueDH >= 0 ? '+' : ''}${m1.trueDH.toFixed(3)} m</span>.`);
+                }
+                allGood = false;
+            }
+            if (!h2Ok) {
+                issues.push(`• <strong>Pisteen P1 korkeus <i>H</i><sub>2</sub>:</strong> Laskit <span class="mono">${isNaN(userH2) ? 'tyhjä' : userH2.toFixed(3)} m</span>, kun kaavan <i>H</i><sub>2</sub> = <i>H</i><sub>1</sub> + Δ<i>H</i> mukainen korkeus on <span class="mono">${m1.H2.toFixed(3)} m</span>.`);
+                allGood = false;
+            }
+
+            if (allGood) {
+                showDiagnostics('success', 'Korkeudenmääritys onnistui virheettömästi!',
+                    `<p>Määritit pisteen P1 korkeuden oikein lähtöpisteen KP1 avulla.</p>
+                     <p class="mono text-emerald">t = ${m1.trueT.toFixed(3)} m | e = ${m1.trueE.toFixed(3)} m | ΔH = ${m1.trueDH >= 0 ? '+' : ''}${m1.trueDH.toFixed(3)} m | H₂ = ${m1.H2.toFixed(3)} m</p>`
+                );
+            } else {
+                showDiagnostics('error', 'Korkeudenmäärityksessä havaittiin korjattavaa:', issues.join('<br>'));
+            }
+        }
+
+        // ============================================================================
+        // EXERCISE 2 LOGIC: PERINTEINEN JONOVAAITUS
+        // ============================================================================
+        function buildMode2Table() {
+            const tbody = document.getElementById('mode2-tbody');
+            tbody.innerHTML = '';
+            const m2 = scenario.mode2;
+
+            const trStart = document.createElement('tr');
+            trStart.className = "row-point";
+            trStart.innerHTML = `
+                <td class="fw-semi text-sky">Piste KP1 (Lähtöpiste)</td>
+                <td></td><td></td><td></td>
+                <td class="text-right mono fw-bold text-sky">${m2.points[0].H_true.toFixed(3)}</td>
+                <td></td>
+                <td class="text-right mono fw-bold text-sky">${m2.points[0].H_true.toFixed(3)}</td>
+            `;
+            tbody.appendChild(trStart);
+
+            m2.stations.forEach((st, idx) => {
+                const ptAfter = m2.points[idx + 1];
+
+                const trSt = document.createElement('tr');
+                trSt.className = "row-station";
+                trSt.onclick = (e) => {
+                    if (e.target.tagName !== 'INPUT') selectStation(idx);
+                };
+                trSt.innerHTML = `
+                    <td class="text-amber fw-semi" style="padding-left:1.25rem;">↳ Kojeasema ${st.idx} (${st.from} → ${st.to})</td>
+                    <td><input type="number" step="0.001" id="m2-t-${idx}" placeholder="t${st.idx}" class="table-input"></td>
+                    <td><input type="number" step="0.001" id="m2-e-${idx}" placeholder="e${st.idx}" class="table-input"></td>
+                    <td><input type="number" step="0.001" id="m2-dh-${idx}" placeholder="t − e" class="table-input"></td>
+                    <td></td><td></td><td></td>
+                `;
+                tbody.appendChild(trSt);
+
+                const trPt = document.createElement('tr');
+                trPt.className = "row-point";
+                const isClosing = (idx === m2.stations.length - 1);
+                const ptColorClass = isClosing ? 'text-sky' : (ptAfter.isNewBM ? 'text-emerald' : '');
+                trPt.innerHTML = `
+                    <td class="fw-semi ${ptColorClass}">
+                        Piste ${ptAfter.label}
+                        ${isClosing ? `<span class="text-sky" style="display:block; font-size:0.7rem; font-weight:400;">Tunnettu <i>H</i> = ${ptAfter.H_true.toFixed(3)} m</span>` : ''}
+                    </td>
+                    <td></td><td></td><td></td>
+                    <td><input type="number" step="0.001" id="m2-hobs-${idx}" placeholder="H_hav" class="table-input"></td>
+                    <td><input type="number" step="0.001" id="m2-corr-${idx}" placeholder="k" class="table-input"></td>
+                    <td><input type="number" step="0.001" id="m2-hadj-${idx}" placeholder="H_tas" class="table-input"></td>
+                `;
+                tbody.appendChild(trPt);
+            });
+
+            const trSum = document.createElement('tr');
+            trSum.className = "row-sum";
+            trSum.innerHTML = `
+                <td>Summatarkistus (Σ<i>t</i> − Σ<i>e</i> = ΣΔ<i>H</i>)</td>
+                <td><input type="number" step="0.001" id="m2-sum-t" placeholder="Σt" class="table-input"></td>
+                <td><input type="number" step="0.001" id="m2-sum-e" placeholder="Σe" class="table-input"></td>
+                <td><input type="number" step="0.001" id="m2-sum-dh" placeholder="ΣΔH" class="table-input"></td>
+                <td colspan="3" class="text-muted" style="font-size:0.72rem; font-weight:400;">Laskujen tarkistus: Σ<i>t</i> − Σ<i>e</i> täsmättävä ΣΔ<i>H</i> kanssa.</td>
+            `;
+            tbody.appendChild(trSum);
+
+            document.getElementById('m2-input-wh').value = '';
+            document.getElementById('m2-input-ppm').value = '';
+            document.getElementById('m2-input-wh').className = 'table-input';
+            document.getElementById('m2-input-ppm').className = 'table-input';
+        }
+
+        function autoCalculateMode2Math() {
+            const m2 = scenario.mode2;
+            let sumT = 0, sumE = 0, sumDh = 0;
+            let runningH = m2.points[0].H_true;
+            const obsHs = [];
+
+            for (let i = 0; i < 4; i++) {
+                const tVal = parseFloat(document.getElementById(`m2-t-${i}`).value);
+                const eVal = parseFloat(document.getElementById(`m2-e-${i}`).value);
+                if (isNaN(tVal) || isNaN(eVal)) {
+                    showDiagnostics('warning', 'Kirjaa ensin taakse- ja eteenlukemat',
+                        'Mittaa ja syötä ensin kunkin kojeaseman taakselukema (<i>t</i>) ja eteenlukema (<i>e</i>), jotta apulaskin voi laskea niistä korkeuserot ja tasoituksen.');
+                    return;
+                }
+                const dh = roundMm(tVal - eVal);
+                runningH = roundMm(runningH + dh);
+                obsHs.push(runningH);
+                sumT = roundMm(sumT + tVal);
+                sumE = roundMm(sumE + eVal);
+                sumDh = roundMm(sumDh + dh);
+
+                document.getElementById(`m2-dh-${i}`).value = dh.toFixed(3);
+                document.getElementById(`m2-hobs-${i}`).value = runningH.toFixed(3);
+            }
+
+            document.getElementById('m2-sum-t').value = sumT.toFixed(3);
+            document.getElementById('m2-sum-e').value = sumE.toFixed(3);
+            document.getElementById('m2-sum-dh').value = sumDh.toFixed(3);
+
+            const knownEndH = m2.points[4].H_true;
+            const wh = roundMm(runningH - knownEndH);
+            const ppm = Math.round((Math.abs(wh) / m2.totalLength) * 1e6 * 10) / 10;
+
+            document.getElementById('m2-input-wh').value = wh.toFixed(3);
+            document.getElementById('m2-input-ppm').value = ppm.toFixed(1);
+
+            for (let i = 0; i < 4; i++) {
+                const corr = roundMm(((i + 1) / 4) * (-wh));
+                const adjH = roundMm(obsHs[i] + corr);
+                document.getElementById(`m2-corr-${i}`).value = corr.toFixed(3);
+                document.getElementById(`m2-hadj-${i}`).value = adjH.toFixed(3);
+            }
+        }
+
+        function verifyMode2() {
+            const m2 = scenario.mode2;
+            let allCorrect = true;
+            const errors = [];
+
+            let trueSumT = 0, trueSumE = 0, trueSumDh = 0;
+            let runningTrueObsH = m2.points[0].H_true;
+            const trueObsHs = [];
+
+            m2.stations.forEach((st, i) => {
+                trueSumT = roundMm(trueSumT + st.t_true);
+                trueSumE = roundMm(trueSumE + st.e_true);
+                trueSumDh = roundMm(trueSumDh + st.dH_true);
+                runningTrueObsH = roundMm(runningTrueObsH + st.dH_true);
+                trueObsHs.push(runningTrueObsH);
+
+                const uT = parseFloat(document.getElementById(`m2-t-${i}`).value);
+                const uE = parseFloat(document.getElementById(`m2-e-${i}`).value);
+                const uDh = parseFloat(document.getElementById(`m2-dh-${i}`).value);
+
+                const okT = !isNaN(uT) && Math.abs(uT - st.t_true) <= 0.002;
+                const okE = !isNaN(uE) && Math.abs(uE - st.e_true) <= 0.002;
+                const okDh = !isNaN(uDh) && Math.abs(uDh - st.dH_true) <= 0.003;
+
+                setInputValidationState(`m2-t-${i}`, okT);
+                setInputValidationState(`m2-e-${i}`, okE);
+                setInputValidationState(`m2-dh-${i}`, okDh);
+
+                if (!okT || !okE) {
+                    allCorrect = false;
+                    errors.push(`• <strong>Kojeasema ${st.idx}:</strong> Tarkista lattalukemat (oikeat: <i>t</i> = <span class="mono">${st.t_true.toFixed(3)} m</span>, <i>e</i> = <span class="mono">${st.e_true.toFixed(3)} m</span>).`);
+                } else if (!okDh) {
+                    allCorrect = false;
+                    errors.push(`• <strong>Kojeasema ${st.idx}:</strong> Korkeuserossa Δ<i>H</i> = <i>t</i> − <i>e</i> on laskuvirhe (pitäisi olla <span class="mono">${st.dH_true.toFixed(3)} m</span>).`);
+                }
+            });
+
+            const trueWh = roundMm(runningTrueObsH - m2.points[4].H_true);
+            const truePpm = (Math.abs(trueWh) / m2.totalLength) * 1e6;
+
+            for (let i = 0; i < 4; i++) {
+                const trueCorr = roundMm(((i + 1) / 4) * (-trueWh));
+                const trueAdjH = roundMm(trueObsHs[i] + trueCorr);
+
+                const uHobs = parseFloat(document.getElementById(`m2-hobs-${i}`).value);
+                const uCorr = parseFloat(document.getElementById(`m2-corr-${i}`).value);
+                const uHadj = parseFloat(document.getElementById(`m2-hadj-${i}`).value);
+
+                const okHobs = !isNaN(uHobs) && Math.abs(uHobs - trueObsHs[i]) <= 0.004;
+                const okCorr = !isNaN(uCorr) && Math.abs(uCorr - trueCorr) <= 0.002;
+                const okHadj = !isNaN(uHadj) && Math.abs(uHadj - trueAdjH) <= 0.004;
+
+                setInputValidationState(`m2-hobs-${i}`, okHobs);
+                setInputValidationState(`m2-corr-${i}`, okCorr);
+                setInputValidationState(`m2-hadj-${i}`, okHadj);
+
+                if (!okHobs || !okCorr || !okHadj) {
+                    allCorrect = false;
+                }
+            }
+
+            const uSumT = parseFloat(document.getElementById('m2-sum-t').value);
+            const uSumE = parseFloat(document.getElementById('m2-sum-e').value);
+            const uSumDh = parseFloat(document.getElementById('m2-sum-dh').value);
+            const uWh = parseFloat(document.getElementById('m2-input-wh').value);
+            const uPpm = parseFloat(document.getElementById('m2-input-ppm').value);
+
+            const okSumT = !isNaN(uSumT) && Math.abs(uSumT - trueSumT) <= 0.004;
+            const okSumE = !isNaN(uSumE) && Math.abs(uSumE - trueSumE) <= 0.004;
+            const okSumDh = !isNaN(uSumDh) && Math.abs(uSumDh - trueSumDh) <= 0.004;
+            const okWh = !isNaN(uWh) && Math.abs(uWh - trueWh) <= 0.002;
+            const okPpm = !isNaN(uPpm) && Math.abs(uPpm - truePpm) <= 2.0;
+
+            setInputValidationState('m2-sum-t', okSumT);
+            setInputValidationState('m2-sum-e', okSumE);
+            setInputValidationState('m2-sum-dh', okSumDh);
+            setInputValidationState('m2-input-wh', okWh);
+            setInputValidationState('m2-input-ppm', okPpm);
+
+            if (!okWh) {
+                allCorrect = false;
+                errors.push(`• <strong>Korkeussulkuvirhe <i>w</i><sub>H</sub>:</strong> Pitäisi olla <i>H</i><sub>havaittu</sub> − <i>H</i><sub>tunnettu</sub> = <span class="mono">${trueWh.toFixed(3)} m</span> (huomaa etumerkki).`);
+            }
+
+            if (allCorrect) {
+                showDiagnostics('success', 'Jonovaaitus ja tasoituslaskenta suoritettu virheettömästi!',
+                    `<p>Kaikki lattalukemat, korkeuserot, summatarkistus (Σ<i>t</i> − Σ<i>e</i> = <span class="mono">${trueSumDh.toFixed(3)} m</span>) ja tasoitus on laskettu oikein.</p>
+                     <p class="mono text-emerald">Sulkuvirhe w_H = ${trueWh.toFixed(3)} m | Suhteellinen tarkkuus r = ${truePpm.toFixed(1)} ppm (&lt; 50 ppm OK) | Uuden kiintopisteen P1 tasoitettu korkeus = ${(trueObsHs[1] + ((2/4)*(-trueWh))).toFixed(3)} m</p>`
+                );
+            } else {
+                showDiagnostics('error', 'Jonovaaituksen havaintokirjassa on vielä virheitä tai puutteita:',
+                    errors.length > 0 ? errors.join('<br>') : 'Tarkista punaisella korostetut solut (havaitut korkeudet, korjaukset <i>k</i> = −<i>w</i><sub>H</sub> · (<i>i</i> / <i>n</i>) ja tasoitetut korkeudet).');
+            }
+        }
+
+        // ============================================================================
+        // EXERCISE 3 LOGIC: DIGITAALINEN TARKKAVAAITUS
+        // ============================================================================
+        function updateDigitalLCDPreview() {
+            const st = scenario.mode3.stations[currentStationIdx];
+            const info = getCurrentTargetInfo();
+            const sBack = roundMm((st.sliderPct / 100) * st.spanLength);
+            const sFore = roundMm(st.spanLength - sBack);
+            const ds = roundMm(sBack - sFore);
+
+            document.getElementById('lcd-station').textContent =
+                `ASEMA ${st.idx}: ${aimDirection === 'back' ? 'TAAKSE (' + st.from + ')' : 'ETEEN (' + st.to + ')'}`;
+
+            const focusError = Math.abs(instState.focusDist - info.distance);
+            const levelled = isInstrumentLevelled();
+
+            if (!levelled) {
+                document.getElementById('lcd-quality').textContent = "VIRHE: EI TASATTU!";
+                document.getElementById('lcd-reading').textContent = "TILT ERR";
+                document.getElementById('lcd-distance').textContent = info.distance.toFixed(2);
+            } else if (focusError > 2.5) {
+                document.getElementById('lcd-quality').textContent = "SIGNAALI: HEIKKO (FOKUS)";
+                document.getElementById('lcd-reading').textContent = "FOCUS?";
+                document.getElementById('lcd-distance').textContent = info.distance.toFixed(2);
+            } else {
+                document.getElementById('lcd-quality').textContent = "SIGNAALI: 99% (OK)";
+                document.getElementById('lcd-reading').textContent = info.apparentReading.toFixed(4);
+                document.getElementById('lcd-distance').textContent = info.distance.toFixed(2);
+            }
+
+            document.getElementById('lcd-ds').textContent = `Aseman Δs: ${ds > 0 ? '+' : ''}${ds.toFixed(2)} m`;
+        }
+
+        function triggerDigitalMeasurement() {
+            const st = scenario.mode3.stations[currentStationIdx];
+            const info = getCurrentTargetInfo();
+            const focusError = Math.abs(instState.focusDist - info.distance);
+
+            if (!isInstrumentLevelled()) {
+                showDiagnostics('error', 'Digitaalinen vaaituskoje: Kompensaattori lukittu (TILT)',
+                    'Tasaa rasiatasain jalkaruuveilla ennen viivakoodimittausta.');
+                return;
+            }
+            if (focusError > 2.5) {
+                showDiagnostics('warning', 'Digitaalinen vaaituskoje: Viivakoodi epäterävä',
+                    'Tarkenna kaukoputken fokusointiruuvilla viivakoodilatta teräväksi, jotta koje pystyy tulkitsemaan koodin.');
+                return;
+            }
+
+            const r1 = info.apparentReading + (Math.random() - 0.5) * 0.0001;
+            const r2 = info.apparentReading + (Math.random() - 0.5) * 0.0001;
+            const r3 = info.apparentReading + (Math.random() - 0.5) * 0.0001;
+            const meanR = round01Mm((r1 + r2 + r3) / 3);
+            const stdMm = Math.sqrt(((r1 - meanR) ** 2 + (r2 - meanR) ** 2 + (r3 - meanR) ** 2) / 2) * 1000;
+
+            document.getElementById('lcd-reading').textContent = meanR.toFixed(4);
+            document.getElementById('lcd-std').textContent = `Hajonta s: ${stdMm.toFixed(2)} mm`;
+
+            if (aimDirection === 'back') {
+                st.t_meas = meanR;
+                st.s_back = info.distance;
+                setTimeout(() => setAimDirection('fore'), 350);
+            } else {
+                st.e_meas = meanR;
+                st.s_fore = info.distance;
+            }
+
+            scenario.mode3.isAdjusted = false;
+            buildMode3Table();
+        }
+
+        function buildMode3Table() {
+            const tbody = document.getElementById('mode3-tbody');
+            tbody.innerHTML = '';
+            const m3 = scenario.mode3;
+
+            const trStart = document.createElement('tr');
+            trStart.className = "row-point";
+            trStart.innerHTML = `
+                <td style="font-family:var(--font-sans);" class="fw-semi text-sky">${m3.points[0].label}</td>
+                <td colspan="5"></td>
+                <td class="text-right fw-bold text-sky">${m3.points[0].H_true.toFixed(4)}</td>
+                <td></td>
+                <td class="text-right fw-bold text-sky">${m3.points[0].H_true.toFixed(4)}</td>
+            `;
+            tbody.appendChild(trStart);
+
+            let runningH = m3.points[0].H_true;
+            let allMeasured = true;
+            let totalDist = 0;
+            let sumDs = 0;
+
+            m3.stations.forEach((st, idx) => {
+                const ptAfter = m3.points[idx + 1];
+                const hasBoth = (st.t_meas !== null && st.e_meas !== null);
+                if (!hasBoth) allMeasured = false;
+
+                const dH = hasBoth ? round01Mm(st.t_meas - st.e_meas) : null;
+                if (hasBoth) {
+                    runningH = round01Mm(runningH + dH);
+                    totalDist += (st.s_back + st.s_fore);
+                    sumDs += (st.s_back - st.s_fore);
+                }
+
+                const ds = (st.s_back !== null && st.s_fore !== null) ? (st.s_back - st.s_fore) : null;
+                const dsBad = ds !== null && Math.abs(ds) > 1.0;
+
+                const tr = document.createElement('tr');
+                tr.className = "row-station";
+                tr.onclick = () => selectStation(idx);
+                tr.innerHTML = `
+                    <td style="font-family:var(--font-sans);" class="fw-semi text-amber">
+                        Asema ${st.idx}: ${st.from} → ${st.to}
+                        ${idx === m3.stations.length - 1 ? `<span class="text-sky" style="display:block; font-size:0.7rem; font-weight:400;">Tunnettu: ${ptAfter.H_true.toFixed(4)} m</span>` : ''}
+                    </td>
+                    <td class="text-right ${st.t_meas !== null ? '' : 'text-dim'}">${st.t_meas !== null ? st.t_meas.toFixed(4) : 'Mittaa t'}</td>
+                    <td class="text-right ${st.e_meas !== null ? '' : 'text-dim'}">${st.e_meas !== null ? st.e_meas.toFixed(4) : 'Mittaa e'}</td>
+                    <td class="text-right text-muted">${st.s_back !== null ? st.s_back.toFixed(1) : '--'} / ${st.s_fore !== null ? st.s_fore.toFixed(1) : '--'}</td>
+                    <td class="text-right fw-semi ${dsBad ? 'text-rose' : 'text-emerald'}">${ds !== null ? (ds > 0 ? '+' : '') + ds.toFixed(2) : '--'}</td>
+                    <td class="text-right fw-semi">${dH !== null ? (dH > 0 ? '+' : '') + dH.toFixed(4) : '--'}</td>
+                    <td class="text-right text-sky">${hasBoth ? runningH.toFixed(4) : '--'}</td>
+                    <td class="text-right text-amber">${st.corr !== null ? (st.corr >= 0 ? '+' : '') + st.corr.toFixed(4) : '--'}</td>
+                    <td class="text-right fw-bold text-emerald">${st.adjH !== null ? st.adjH.toFixed(4) : '--'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('m3-summary-dist').textContent = `${totalDist.toFixed(1)} m | ΣΔs: ${sumDs >= 0 ? '+' : ''}${sumDs.toFixed(2)} m`;
+            if (allMeasured) {
+                const knownEnd = m3.points[3].H_true;
+                const wh = round01Mm(runningH - knownEnd);
+                const ppm = (Math.abs(wh) / totalDist) * 1e6;
+                document.getElementById('m3-summary-wh').textContent = `${wh >= 0 ? '+' : ''}${(wh * 1000).toFixed(2)} mm (${wh.toFixed(4)} m)`;
+                document.getElementById('m3-summary-ppm').textContent = `${ppm.toFixed(2)} ppm`;
+            } else {
+                document.getElementById('m3-summary-wh').textContent = "Mittaa kaikki 3 asemaa";
+                document.getElementById('m3-summary-ppm').textContent = "- ppm";
+            }
+        }
+
+        function adjustDigitalLine() {
+            const m3 = scenario.mode3;
+            let runningH = m3.points[0].H_true;
+            for (let i = 0; i < 3; i++) {
+                const st = m3.stations[i];
+                if (st.t_meas === null || st.e_meas === null) {
+                    showDiagnostics('warning', 'Kaikkia kojeasemia ei ole vielä mitattu',
+                        'Mittaa ensin taakse- ja eteenlukemat kaikilla kolmella kojeasemalla ennen jonon tasoittamista.');
+                    return;
+                }
+                runningH = round01Mm(runningH + (st.t_meas - st.e_meas));
+            }
+
+            const wh = round01Mm(runningH - m3.points[3].H_true);
+            let obsH = m3.points[0].H_true;
+            for (let i = 0; i < 3; i++) {
+                const st = m3.stations[i];
+                obsH = round01Mm(obsH + (st.t_meas - st.e_meas));
+                const corr = round01Mm(((i + 1) / 3) * (-wh));
+                st.corr = corr;
+                st.adjH = round01Mm(obsH + corr);
+            }
+            m3.isAdjusted = true;
+            buildMode3Table();
+        }
+
+        function verifyMode3() {
+            const m3 = scenario.mode3;
+            let runningH = m3.points[0].H_true;
+            let maxDs = 0;
+
+            for (let i = 0; i < 3; i++) {
+                const st = m3.stations[i];
+                if (st.t_meas === null || st.e_meas === null) {
+                    showDiagnostics('warning', 'Mittaus on kesken', 'Suorita mittaus kaikilla 3 kojeasemalla.');
+                    return;
+                }
+                runningH = round01Mm(runningH + (st.t_meas - st.e_meas));
+                const ds = Math.abs(st.s_back - st.s_fore);
+                if (ds > maxDs) maxDs = ds;
+            }
+
+            const wh = round01Mm(runningH - m3.points[3].H_true);
+            const ppm = (Math.abs(wh) / m3.totalLength) * 1e6;
+
+            if (ppm <= 5.0 && m3.isAdjusted) {
+                showDiagnostics('success', 'Tarkkavaaitus täyttää korkeusperuspisteiden laatuvaatimuksen (≤ 5 ppm)!',
+                    `<p>Tasapainotit tähtäysmatkat huolellisesti (suurin matkaero |Δ<i>s</i>| = <span class="mono">${maxDs.toFixed(2)} m</span>), jolloin kojeen tähtäysakselin kaltevuusvirhe kumoutui.</p>
+                     <p class="mono text-emerald">Sulkuvirhe w_H = ${(wh * 1000).toFixed(2)} mm | Suhteellinen tarkkuus r = ${ppm.toFixed(2)} ppm (≤ 5.0 ppm OK)</p>`
+                );
+            } else if (ppm > 5.0) {
+                showDiagnostics('error', `Suhteellinen tarkkuus (${ppm.toFixed(1)} ppm) ylittää tarkkavaaituksen 5 ppm rajan!`,
+                    `<p><strong>Mistä virhe johtui?</strong> Vaaituskojeessa on pieni tähtäysakselin kaltevuusvirhe (Laurila s. 369–370). Koska taakse- ja eteenmatkoissa oli eroa (suurin |Δ<i>s</i>| = <span class="mono">${maxDs.toFixed(2)} m</span>), kaltevuusvirhe ei kumoutunut.</p>
+                     <p><strong>Korjausohje:</strong> Siirrä kojeasemien paikkaa liukusäätimellä niin, että <i>s</i><sub>t</sub> ≈ <i>s</i><sub>e</sub> (25.0 m / 25.0 m) ja mittaa asemat uudelleen.</p>`
+                );
+            } else {
+                showDiagnostics('warning', 'Paina vielä "Laske sulkuvirhe & tasoita jono"',
+                    'Mittaustarkkuutesi on erinomainen. Suorita vielä jonon tasoituslaskenta painikkeesta ennen lopullista hyväksyntää.');
+            }
+        }
+
+        // ============================================================================
+        // EXERCISE 4 LOGIC: KORKEUDENMERKINTÄ (FORMER MODE 1)
+        // ============================================================================
+        function autoCalculateMode4Math() {
+            const m4 = scenario.mode4;
+            const userT = parseFloat(document.getElementById('m4-input-t').value);
+            if (isNaN(userT)) {
+                showDiagnostics('warning', 'Kirjaa ensin taakselukema KP1:ltä',
+                    'Lue ja syötä ensin taakselukema (<i>t</i>) kiintopisteeltä KP1, jotta tähtäystaso ja vaadittu eteenlukema voidaan laskea.');
+                return;
+            }
+            const hi = roundMm(m4.H1 + userT);
+            const eReq = roundMm(hi - m4.H2);
+            document.getElementById('m4-input-hi').value = hi.toFixed(3);
+            document.getElementById('m4-input-e').value = eReq.toFixed(3);
+        }
+
+        function verifyMode4() {
+            const m4 = scenario.mode4;
+            const userT = parseFloat(document.getElementById('m4-input-t').value);
+            const userHi = parseFloat(document.getElementById('m4-input-hi').value);
+            const userE = parseFloat(document.getElementById('m4-input-e').value);
+
+            const issues = [];
+            let allGood = true;
+
+            if (!isInstrumentLevelled()) {
+                issues.push("• <strong>Vaaituskoje on tasaamaton:</strong> Rasiatasaimen kupla ei ole keskellä, joten tähtäyssäde on vinossa.");
+                allGood = false;
+            }
+
+            const tOk = !isNaN(userT) && Math.abs(userT - m4.trueT) <= 0.002;
+            const hiOk = !isNaN(userHi) && Math.abs(userHi - m4.sightH) <= 0.002;
+            const eOk = !isNaN(userE) && Math.abs(userE - m4.trueE) <= 0.002;
+
+            setInputValidationState('m4-input-t', tOk);
+            setInputValidationState('m4-input-hi', hiOk);
+            setInputValidationState('m4-input-e', eOk);
+
+            if (!tOk) {
+                issues.push(`• <strong>Taakselukema <i>t</i>:</strong> Kirjasit <span class="mono">${isNaN(userT) ? 'tyhjä' : userT.toFixed(3)} m</span>, kun oikea lukema kiintopisteeltä KP1 on <span class="mono">${m4.trueT.toFixed(3)} m</span>.`);
+                allGood = false;
+            }
+            if (!hiOk) {
+                issues.push(`• <strong>Tähtäystason korkeus (<i>H</i><sub>1</sub> + <i>t</i>):</strong> Laskit <span class="mono">${isNaN(userHi) ? 'tyhjä' : userHi.toFixed(3)} m</span>, kun oikea arvo on <span class="mono">${m4.sightH.toFixed(3)} m</span>.`);
+                allGood = false;
+            }
+            if (!eOk) {
+                issues.push(`• <strong>Vaadittu eteenlukema <i>e</i>:</strong> Laskit <span class="mono">${isNaN(userE) ? 'tyhjä' : userE.toFixed(3)} m</span>, kun kaavan <i>e</i> = (<i>H</i><sub>1</sub> + <i>t</i>) − <i>H</i><sub>2</sub> mukainen lukema on <span class="mono">${m4.trueE.toFixed(3)} m</span>.`);
+                allGood = false;
+            }
+
+            const staffErrorMm = Math.round(m4.staffOffsetZ * 1000);
+            if (Math.abs(staffErrorMm) > 2) {
+                issues.push(`• <strong>Muottilatan korkeusasema:</strong> Muottilatan kanta on nyt korkeudella <span class="mono">${(m4.H2 + m4.staffOffsetZ).toFixed(3)} m</span> (poikkeama tavoitteesta <strong>${staffErrorMm > 0 ? '+' : ''}${staffErrorMm} mm</strong>). Tähtää eteen ja säädä muottilatan liukusäädintä niin, että vaakaviiva näyttää <span class="mono">${m4.trueE.toFixed(3)} m</span>.`);
+                allGood = false;
+            }
+
+            if (allGood) {
+                showDiagnostics('success', 'Korkeudenmerkintä onnistui erinomaisesti!',
+                    `<p>Olet vienyt korkeuden kiintopisteeltä KP1 (${m4.H1.toFixed(3)} m) rakennusmuotille täsmälleen hyvän mittaustavan mukaisesti.</p>
+                     <p class="mono text-emerald">Tähtäystaso: ${m4.sightH.toFixed(3)} m | Eteenlukema e: ${m4.trueE.toFixed(3)} m | Merkinnän poikkeama: ${staffErrorMm} mm</p>`
+                );
+            } else {
+                showDiagnostics('error', 'Korkeudenmerkinnässä havaittiin korjattavaa:', issues.join('<br>'));
+            }
+        }
+
+        // ============================================================================
+        // UI HELPERS & DIAGNOSTICS
+        // ============================================================================
+        function setInputValidationState(id, isOk) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('correct', 'incorrect');
+            el.classList.add(isOk ? 'correct' : 'incorrect');
+        }
+
+        function showDiagnostics(type, title, htmlBody) {
+            const panel = document.getElementById('diagnostics-panel');
+            const icon = document.getElementById('diag-icon');
+            const tEl = document.getElementById('diag-title');
+            const bEl = document.getElementById('diag-body');
+
+            panel.classList.remove('hidden', 'diag-success', 'diag-error', 'diag-warning');
+            if (type === 'success') {
+                panel.classList.add('diag-success');
+                icon.style.background = 'rgba(16, 185, 129, 0.2)';
+                icon.style.color = '#34d399';
+                icon.innerHTML = '✓';
+                tEl.style.color = '#6ee7b7';
+            } else if (type === 'error') {
+                panel.classList.add('diag-error');
+                icon.style.background = 'rgba(239, 68, 68, 0.2)';
+                icon.style.color = '#f87171';
+                icon.innerHTML = '!';
+                tEl.style.color = '#fca5a5';
+            } else {
+                panel.classList.add('diag-warning');
+                icon.style.background = 'rgba(245, 158, 11, 0.2)';
+                icon.style.color = '#fbbf24';
+                icon.innerHTML = 'i';
+                tEl.style.color = '#fcd34d';
+            }
+
+            tEl.textContent = title;
+            bEl.innerHTML = htmlBody;
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function closeDiagnostics() {
+            document.getElementById('diagnostics-panel').classList.add('hidden');
+        }
+
+        function toggleTheoryModal() {
+            document.getElementById('theory-modal').classList.toggle('hidden');
+        }
+
+        function toggleAboutModal() {
+            document.getElementById('about-modal').classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
