@@ -2,8 +2,8 @@
 Selaimessa toimiva opetussimulaattori vaaituksen perusteiden harjoitteluun.
 ## Harjoitukset
 1. Korkeudenmääritys – Uuden pisteen korkeuden määrittäminen tunnetun kiintopisteen avulla.
-2. Perinteinen jonovaaitusOptinen vaaitus E-latalla, käsin täytettävä havaintokirja, sulkuvirheen tarkistus ja jonon tasoitus.
-3. Digitaalinen tarkkavaaitus – Tarkkavaaitus invar-viivakoodilatalla ja tähtäysmatkojen tasapainotus ($\le 5\text{ ppm}$).
+2. Perinteinen jonovaaitus – Optinen vaaitus E-latalla, käsin täytettävä havaintokirja, sulkuvirheen tarkistus ja jonon tasoitus.
+3. Digitaalinen tarkkavaaitus – Tarkkavaaitus viivakoodilatalla ja tähtäysmatkojen tasapainotus ($\le 5\text{ ppm}$).
 4. Korkeudenmerkintä – Suunnitellun perustuskorkeuden vienti ja merkintä rakennusmuotille.
 #   Muutosloki
 - v0.3 (2026-11-20)
